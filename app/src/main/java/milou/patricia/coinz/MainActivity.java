@@ -1,11 +1,12 @@
 package milou.patricia.coinz;
 
-import android.content.Context;
+
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.Window;
+import android.widget.Toast;
 
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.mapboxsdk.Mapbox;
@@ -20,7 +21,17 @@ import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.time.Year;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Date;
+
+import retrofit2.http.Url;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener{
     private MapView mapView;
@@ -29,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
     private Location locationOrigin;
+    private Date date = new Date();
+    private Calendar calendar = new GregorianCalendar();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +53,31 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
 
+        calendar.setTime(date);
+        int year = calendar.get(Calendar.YEAR);
+        //Add one to month {0 - 11}
+        int month = calendar.get(Calendar.MONTH) + 1;
+        int day = calendar.get(Calendar.DAY_OF_MONTH);
+        String maplink="http://homepages.inf.ed.ac.uk/stg/coinz/"+ year+"/"+month+"/"+day+"/coinzmap.geojson";
+        String a= null;
+//        try {
+//            a = downloadUrl(new URL(maplink)).toString();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+        Toast.makeText(MainActivity.this, maplink, Toast.LENGTH_SHORT).show();
+
+
+    }
+    // Given a string representation of a URL, sets up a connection and gets an input stream.
+    private InputStream downloadUrl(URL url) throws IOException {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setReadTimeout(10000); // milliseconds
+        conn.setConnectTimeout(15000); // milliseconds
+        conn.setRequestMethod("GET");
+        conn.setDoInput(true);
+        conn.connect();
+        return conn.getInputStream();
     }
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
@@ -48,25 +86,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     private void enableLocation(){
-        if (permissionsManager.areLocationPermissionsGranted(this)){
+        // Check if permissions are enabled and if not request
+        if (PermissionsManager.areLocationPermissionsGranted(this)) {
             initializeLocationEngine();
-            initializeLocationLayer();
-        }else{
-            permissionsManager=new PermissionsManager(this);
+            // Create an instance of the plugin. Adding in LocationLayerOptions is also an optional
+            // parameter
+            LocationLayerPlugin locationLayerPlugin = new LocationLayerPlugin(mapView,map);
+
+            // Set the plugin's camera mode
+            locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
+            getLifecycle().addObserver(locationLayerPlugin);
+        } else {
+            permissionsManager = new PermissionsManager(this);
             permissionsManager.requestLocationPermissions(this);
         }
     }
     @SuppressWarnings("MissingPermission")
     private void initializeLocationEngine(){
-        locationEngine= new LocationEngineProvider(this).obtainBestLocationEngineAvailable();
+        LocationEngineProvider locationEngineProvider = new LocationEngineProvider(this);
+        locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
         locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
         locationEngine.activate();
 
-        Location lastLocation= locationEngine.getLastLocation();
-        if(lastLocation!=null){
-            locationOrigin=lastLocation;
-            setCameraPosition(lastLocation);
-        }else{
+        Location lastLocation = locationEngine.getLastLocation();
+        if (lastLocation != null) {
+            locationOrigin = lastLocation;
+        } else {
             locationEngine.addLocationEngineListener(this);
         }
 
@@ -96,31 +141,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {
-
     }
 
     @Override
     public void onPermissionResult(boolean granted) {
-        if(granted){
+        if (granted) {
             enableLocation();
+        } else {
+            finish();
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        permissionsManager.onRequestPermissionsResult(requestCode,permissions,grantResults);
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @SuppressWarnings("MissingPermission")
     public void onStart() {
         super.onStart();
-        if(locationEngine!=null){
-            locationEngine.requestLocationUpdates();
-        }
-        if(locationLayerPlugin!=null){
+        mapView.onStart();
+        if (locationLayerPlugin != null) {
             locationLayerPlugin.onStart();
         }
-        mapView.onStart();
     }
 
     @Override
@@ -138,13 +181,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onStop() {
         super.onStop();
-        if(locationEngine!=null){
-            locationEngine.removeLocationUpdates();
-        }
-        if(locationLayerPlugin!=null){
-            locationLayerPlugin.onStop();
-        }
         mapView.onStop();
+        if (locationLayerPlugin != null) {
+            locationLayerPlugin.onStart();
+        }
     }
 
     @Override
