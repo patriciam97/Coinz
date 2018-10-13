@@ -1,106 +1,115 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.widget.RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".RegisterActivity">
+    tools:context=".LoginScreen">
 
     <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:ignore="MissingConstraints"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="16dp">
+        android:id="@+id/relativeLayout2"
+        android:layout_width="411dp"
+        android:layout_height="603dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:background="@drawable/background"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.481"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:layout_editor_absoluteY="4dp">
 
 
         <TextView
             android:id="@+id/lbl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignStart="@+id/registerbtn"
-            android:layout_marginBottom="213dp"
+            android:layout_centerInParent="true"
             android:text="Password:"
-            android:textColor="#3fc1bb"
             android:textSize="18sp" />
-
-        <!--<TextView-->
-        <!--android:id="@+id/lbl1"-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:layout_alignParentTop="true"-->
-        <!--android:layout_centerHorizontal="true"-->
-        <!--android:layout_marginTop="176dp"-->
-        <!--android:text="Register your account"-->
-        <!--android:textColorLink="?android:attr/textColorLinkInverse"-->
-        <!--android:textSize="24sp" />-->
 
         <TextView
             android:id="@+id/lbl2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignEnd="@+id/lbl"
             android:layout_alignParentTop="true"
-            android:layout_marginTop="253dp"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="186dp"
             android:text="Email:"
-            android:textColor="#3fc1bb"
             android:textSize="18sp" />
 
         <EditText
             android:id="@+id/emailInput"
-            android:layout_width="wrap_content"
+            android:layout_width="241dp"
             android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/lbl2"
-            android:layout_toEndOf="@+id/lbl"
+            android:layout_below="@+id/lbl2"
+            android:layout_centerHorizontal="true"
             android:ems="10"
             android:inputType="textEmailAddress"
-            android:textSize="18sp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.552"
-            tools:layout_editor_absoluteX="85dp" />
+            android:textAlignment="center"
+            android:textSize="18sp" />
 
         <EditText
             android:id="@+id/passwordInput"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignBottom="@+id/lbl"
-            android:layout_toEndOf="@+id/lbl"
+            android:layout_width="239dp"
+            android:layout_height="43dp"
+            android:layout_below="@+id/lbl"
+            android:layout_centerHorizontal="true"
             android:ems="10"
             android:inputType="textPassword"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintVertical_bias="0.766"
-            tools:layout_editor_absoluteX="85dp" />
+            android:textAlignment="center" />
+
 
         <Button
             android:id="@+id/registerbtn"
-            android:layout_width="317dp"
-            android:layout_height="wrap_content"
+            android:layout_width="258dp"
+            android:layout_height="46dp"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="107dp"
+            android:layout_marginBottom="47dp"
             android:background="@drawable/mybuttons"
-            android:onClick="clickRegister"
-            android:text="Sign Up"
+            android:onClick="registerUser"
+            android:text="Register"
+            android:textAlignment="center"
             android:textAllCaps="false"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            tools:layout_editor_absoluteY="499dp" />
+            android:textColor="@android:color/white"
+            android:textSize="17sp" />
 
         <ImageView
             android:id="@+id/imageView"
-            android:layout_width="350dp"
-            android:layout_height="118dp"
+            android:layout_width="332dp"
+            android:layout_height="80dp"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="83dp"
+            android:layout_marginTop="59dp"
             android:src="@drawable/logo3" />
+
+        <android.support.constraint.Guideline
+            android:id="@+id/guideline2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <android.support.constraint.Guideline
+            android:id="@+id/guideline3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <android.support.constraint.Guideline
+            android:id="@+id/guideline4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="12dp"
+            android:onClick="forgotPassword"
+            android:text="Forgot your password?"
+            android:textColor="@android:color/background_light" />
 
 
     </RelativeLayout>
 
-</android.support.constraint.ConstraintLayout>
+</android.widget.RelativeLayout>

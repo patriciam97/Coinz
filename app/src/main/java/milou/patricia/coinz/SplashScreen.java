@@ -15,7 +15,7 @@ import java.io.InputStream;
 public class SplashScreen extends AppCompatActivity {
 
     // Splash screen timer
-    private static int TIME_OUT = 2000;
+    private static int TIME_OUT = 1000;
     private GifImageView gifImageView;
 
 
@@ -26,7 +26,7 @@ public class SplashScreen extends AppCompatActivity {
         gifImageView=(GifImageView)findViewById(R.id.gifImageView);
         //set GifImageView
         try{
-            InputStream inputStream=getAssets().open("coinz3.gif");
+            InputStream inputStream=getAssets().open("giflogo2.gif");
             byte[] bytes= IOUtils.toByteArray(inputStream);
             gifImageView.setBytes(bytes);
             gifImageView.startAnimation();
