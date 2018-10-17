@@ -1,7 +1,9 @@
 package milou.patricia.coinz;
 
+import android.app.Activity;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
+import android.view.animation.AccelerateInterpolator;
 
 import org.json.JSONException;
 
@@ -12,11 +14,18 @@ import java.io.InputStream;
 
 import java.io.InputStreamReader;
 
+import java.lang.ref.WeakReference;
 import java.net.URL;
 
 
-public class DownloadFileTask extends AsyncTask<String, Void, String> {
+public class DownloadFileTask extends AsyncTask<String,Void, String> {
     public AsyncResponse delegate = null;
+    private WeakReference<MainActivity> activityReference;
+
+    // only retain a weak reference to the activity
+    DownloadFileTask(MainActivity context) {
+        activityReference = new WeakReference<>(context);
+    }
     @Override
     protected String doInBackground(String... urls) {
 
@@ -46,7 +55,8 @@ public class DownloadFileTask extends AsyncTask<String, Void, String> {
     @Override
     protected void onPostExecute(String result){
         super.onPostExecute(result);
-        MainActivity.processFinish(result);
+        MainActivity activity = activityReference.get();
+        activity.processFinish(result);
 
     }
 

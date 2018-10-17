@@ -8,21 +8,34 @@
     <com.mapbox.mapboxsdk.maps.MapView
         android:id="@+id/mapView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        mapbox:mapbox_cameraTargetLat="55.943877"
+        mapbox:mapbox_cameraTargetLng="-3.187479"
+        mapbox:mapbox_cameraZoom="14">
     </com.mapbox.mapboxsdk.maps.MapView>
 
     <Button
         android:id="@+id/centremap"
-        android:layout_width="98dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="248dp"
-        android:layout_marginTop="500dp"
+        android:layout_width="66dp"
+        android:layout_height="37dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginEnd="13dp"
+        android:layout_marginTop="12dp"
         android:background="@drawable/bluebutton"
         android:onClick="centreMap"
         android:text="Central Campus"
         android:textColor="@android:color/background_light"
-        android:textSize="12sp" />
+        android:textSize="10sp" />
+
+    <ProgressBar
+        android:id="@+id/pBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="244dp"
+        android:layout_height="189dp"
+        android:layout_centerInParent="true"
+        android:visibility="visible" />
 
 </RelativeLayout>

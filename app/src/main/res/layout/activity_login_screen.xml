@@ -60,7 +60,7 @@
 
         <Button
             android:id="@+id/loginbtn"
-            android:layout_width="256dp"
+            android:layout_width="148dp"
             android:layout_height="43dp"
             android:layout_above="@+id/registerbtn"
             android:layout_centerHorizontal="true"
@@ -75,11 +75,11 @@
 
         <Button
             android:id="@+id/registerbtn"
-            android:layout_width="258dp"
-            android:layout_height="46dp"
+            android:layout_width="148dp"
+            android:layout_height="43dp"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginBottom="47dp"
+            android:layout_marginBottom="46dp"
             android:background="@drawable/mybuttons"
             android:onClick="registerUser"
             android:text="Register"
@@ -130,6 +130,7 @@
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
             android:layout_marginBottom="173dp"
+            android:checked="true"
             android:text="Remember me" />
 
 

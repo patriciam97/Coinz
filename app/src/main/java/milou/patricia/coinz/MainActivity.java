@@ -3,6 +3,7 @@ package milou.patricia.coinz;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 
@@ -20,6 +22,7 @@ import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
+import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
@@ -41,13 +44,15 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
 
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener,AsyncResponse{
+    private ProgressBar pgsBar;
     private FirebaseAuth mAuth;
-    private static MapView mapView;
+    private MapView mapView;
     private MapboxMap map;
     private Button centremapbtn;
     private Boolean campus=false;
@@ -55,11 +60,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
     private Location locationOrigin;
-    private static String mapstr="";
-    private static JSONObject json;
-    private static IconFactory iconFactory;
-    private static Bitmap resizedPeny,resizedShil,resizedDolr,resizedQuid;
-    private static Icon icon;
+    private String mapstr="";
+    private JSONObject json;
+    private IconFactory iconFactory;
+    private Bitmap[] p= new Bitmap[10];
+    private Bitmap[] d= new Bitmap[10];
+    private Bitmap[] q= new Bitmap[10];
+    private Bitmap[] s= new Bitmap[10];
+    private Icon icon ;
+    private Bitmap imageBitmap;
+    private Bitmap  redMarker,blueMarker,greenMarker,yellowMarker;
+    private ArrayList<MarkerOptions> markers= new ArrayList<>();
+    private Bitmap[] IMarkers= new Bitmap[10];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,79 +91,114 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         String maplink = "http://www.homepages.inf.ed.ac.uk/stg/coinz/" +date1+ "/coinzmap.geojson";
         Log.i("map link", maplink);
-        DownloadFileTask dft = new DownloadFileTask();
-        dft.execute(maplink);
+      //  DownloadFileTask dft = new DownloadFileTask();
+        new DownloadFileTask(this).execute(maplink);
         iconFactory= IconFactory.getInstance(MainActivity.this);
-//        iconPeny= iconFactory.fromResource(R.drawable.iconpenny);
-//        iconDolr= iconFactory.fromResource(R.drawable.icondolr);
-//        iconShil= iconFactory.fromResource(R.drawable.iconshelly);
-//        iconQuid= iconFactory.fromResource(R.drawable.iconquid);
-        Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("iconpenny", "drawable", getPackageName()));
-        resizedPeny = Bitmap.createScaledBitmap(imageBitmap,50, 50, false);
-        imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("icondolr", "drawable", getPackageName()));
-        resizedDolr = Bitmap.createScaledBitmap(imageBitmap,50, 50,  false);
-        imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("iconshelly", "drawable", getPackageName()));
-        resizedShil = Bitmap.createScaledBitmap(imageBitmap,50, 50,  false);
-        imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("iconquid", "drawable", getPackageName()));
-        resizedQuid = Bitmap.createScaledBitmap(imageBitmap,50, 50,  false);
-
+        for(int i=0;i<10;i++){
+            String x=Integer.toString(i);
+            Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
+            IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
+        }
     }
 
 
-    public static void processFinish(String output){
+    public void processFinish(String output){
         mapstr=output;
         try {
             addMarkers();
+            Log.i("async","done");
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
-    public static void addMarkers()throws JSONException {
+    public void addMarkers()throws JSONException {
         JSONArray features;
         while(mapstr!="") {
             json = new JSONObject(mapstr);
+            Log.i("map",mapstr);
             String dat= json.getString("date-generated");
            features=json.getJSONArray("features");
            for(int i=0;i<features.length();i++){
                JSONObject feature =features.getJSONObject(i);
                //get properties
                JSONObject properties =feature.getJSONObject("properties");
-               String id =properties.getString("id");
+               //String id =properties.getString("id");
                String value =properties.getString("value");
                String currency =properties.getString("currency");
                String markersymbol =properties.getString("marker-symbol");
-               String markercolor =properties.getString("marker-color");
+               //String markercolor =properties.getString("marker-color");
                 //get coordinates
                JSONObject geometry =feature.getJSONObject("geometry");
                JSONArray coordinates =geometry.getJSONArray("coordinates");
                String lng=coordinates.get(0).toString();
                String lat=coordinates.get(1).toString();
                //icon to use
-               switch (currency) {
-                   case "SHIL":icon=iconFactory.fromBitmap(resizedShil);
-                                break;
-                   case "PENY":icon=iconFactory.fromBitmap(resizedPeny);
-                                 break;
-                   case "QUID":icon=iconFactory.fromBitmap(resizedQuid);
-                                 break;
-                   case "DOLR":icon=iconFactory.fromBitmap(resizedDolr);
-                                break;
-               }
-               mapView.getMapAsync(new OnMapReadyCallback() {
-                   @Override
-                   public void onMapReady(MapboxMap mapboxMap) {
-                       // One way to add a marker view
-                       mapboxMap.addMarker(new MarkerOptions()
-                               .position(new LatLng(Double.parseDouble(lat),Double.parseDouble(lng)))
-                               .title(value.substring(0,1))
-                               .snippet(currency)
-                               .setIcon(icon));
-                       }
-               });
-
+               icon=getNumIcon(markersymbol);
+               icon=getColourIcon(icon,currency);
+               addMarker(lat,lng, value,icon);
            }
-            break;
+           break;
         }
+        pgsBar = (ProgressBar)findViewById(R.id.pBar);
+        pgsBar.setVisibility(View.GONE);
+    }
+    public Icon getNumIcon(String markersymbol){
+        switch (markersymbol) {
+            case "0": return iconFactory.fromBitmap(IMarkers[0]);
+            case "1": return iconFactory.fromBitmap(IMarkers[1]);
+            case "2": return iconFactory.fromBitmap(IMarkers[2]);
+            case "3": return iconFactory.fromBitmap(IMarkers[3]);
+            case "4": return iconFactory.fromBitmap(IMarkers[4]);
+            case "5": return iconFactory.fromBitmap(IMarkers[5]);
+            case "6": return iconFactory.fromBitmap(IMarkers[6]);
+            case "7": return iconFactory.fromBitmap(IMarkers[7]);
+            case "8": return iconFactory.fromBitmap(IMarkers[8]);
+            case "9": return iconFactory.fromBitmap(IMarkers[9]);
+        }
+       return icon;
+    }
+    public Icon getColourIcon(Icon icon,String currency){
+        final Bitmap bmp =icon.getBitmap();
+        int [] allpixels = new int [bmp.getHeight() * bmp.getWidth()];
+        bmp.getPixels(allpixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
+        int to=0;
+        switch (currency){
+            case "PENY": to =Color.rgb(255,0,0); //red
+                            break;
+            case "DOLR": to =Color.rgb(0,170,255); //blue
+                            break;
+            case "SHIL": to =Color.rgb(255,204,0);  //yellow
+                            break;
+            case "QUID": to =Color.rgb(0,153,51);  //green
+                            break;
+
+        }
+        for(int i = 0; i < allpixels.length; i++)
+        {
+            if(allpixels[i] == Color.rgb(0,174,239))
+            {
+                allpixels[i] =to;
+            }
+        }
+
+       bmp.setPixels(allpixels,0,bmp.getWidth(),0, 0,bmp.getWidth(),bmp.getHeight());
+       return iconFactory.fromBitmap(bmp);
+    }
+
+    public void addMarker(String lat,String lng, String value,Icon icon){
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                // One way to add a marker view
+                MarkerOptions m= new MarkerOptions()
+                        .position(new LatLng(Double.parseDouble(lat),Double.parseDouble(lng)))
+                        //.title(value.substring(0,1))
+                        .setIcon(icon);
+                mapboxMap.addMarker(m);
+                markers.add(m);
+            }
+        });
+
     }
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
@@ -188,7 +235,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } else {
             locationEngine.addLocationEngineListener(this);
         }
-
     }
 
     private void initializeLocationLayer(){

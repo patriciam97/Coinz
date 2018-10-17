@@ -12,14 +12,24 @@ import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.concurrent.ExecutionException;
+
 
 public class RegisterActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     EditText emailET,passwordET ;
     String email,password;
     Button btnregister;
+    private FirebaseFirestore firestore;
+    private DocumentReference firestoreUsers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,23 +39,27 @@ public class RegisterActivity extends AppCompatActivity {
         passwordET = findViewById(R.id.passwordInput);
         mAuth = FirebaseAuth.getInstance();
         btnregister= (Button)findViewById(R.id.registerbtn);
-
     }
-    private void registerUser(){
-        ValidateFields();
-        Toast.makeText(RegisterActivity.this, "Fields ok", Toast.LENGTH_SHORT).show();
-        mAuth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            // Sign in success, update UI with the signed-in user's information
-                            Toast.makeText(RegisterActivity.this, "User Registered Succesful", Toast.LENGTH_SHORT).show();
 
+
+    private void registerUser() throws ExecutionException, InterruptedException {
+        ValidateFields();
+       // if(checkIfUserExists()==false) {
+            mAuth.createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                        @Override
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+                            if (task.isSuccessful()) {
+                                // Sign in success, update UI with the signed-in user's information
+                                Toast.makeText(RegisterActivity.this, "User Registered Succesful", Toast.LENGTH_SHORT).show();
+                            }else{
+                                Toast.makeText(RegisterActivity.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
+                            }
                         }
-                    }
-                });
+                    });
+//        }else{
+//            Toast.makeText(RegisterActivity.this, "User is already registered", Toast.LENGTH_SHORT).show();
+//        }
     }
     private void ValidateFields(){
         Toast.makeText(RegisterActivity.this, "Validating", Toast.LENGTH_SHORT).show();
@@ -64,7 +78,7 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
-     public void clickRegister(View view){
+     public void clickRegister(View view) throws ExecutionException, InterruptedException {
 
          email=emailET.getText().toString();
          password=passwordET.getText().toString();

@@ -83,7 +83,8 @@ public class LoginScreen extends AppCompatActivity {
 
                         } else {
                             // If sign in fails, display a message to the user.
-                             updateUI(null);
+                            updateUI(null);
+                            Toast.makeText(LoginScreen.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
                         }
                     }
 
@@ -138,7 +139,7 @@ public class LoginScreen extends AppCompatActivity {
     public void onPause() {
         super.onPause();
         if (checkBox.isChecked()) {
-            savePreferences(email,password,checkBox.isChecked());
+            savePreferences(email,password,true);
         }else{
             savePreferences("","",false);
         }
