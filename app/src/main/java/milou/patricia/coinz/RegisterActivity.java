@@ -1,5 +1,6 @@
 package milou.patricia.coinz;
 
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,6 +18,7 @@ import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -30,7 +32,7 @@ public class RegisterActivity extends AppCompatActivity {
     Button btnregister;
     private FirebaseFirestore firestore;
     private DocumentReference firestoreUsers;
-
+    private FirebaseUser user;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -41,26 +43,6 @@ public class RegisterActivity extends AppCompatActivity {
         btnregister= (Button)findViewById(R.id.registerbtn);
     }
 
-
-    private void registerUser() throws ExecutionException, InterruptedException {
-        ValidateFields();
-       // if(checkIfUserExists()==false) {
-            mAuth.createUserWithEmailAndPassword(email, password)
-                    .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                        @Override
-                        public void onComplete(@NonNull Task<AuthResult> task) {
-                            if (task.isSuccessful()) {
-                                // Sign in success, update UI with the signed-in user's information
-                                Toast.makeText(RegisterActivity.this, "User Registered Succesful", Toast.LENGTH_SHORT).show();
-                            }else{
-                                Toast.makeText(RegisterActivity.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-//        }else{
-//            Toast.makeText(RegisterActivity.this, "User is already registered", Toast.LENGTH_SHORT).show();
-//        }
-    }
     private void ValidateFields(){
         Toast.makeText(RegisterActivity.this, "Validating", Toast.LENGTH_SHORT).show();
 
@@ -78,10 +60,35 @@ public class RegisterActivity extends AppCompatActivity {
         }
     }
 
-     public void clickRegister(View view) throws ExecutionException, InterruptedException {
+    private void registerUser() throws ExecutionException, InterruptedException {
+        ValidateFields();
+        // if(checkIfUserExists()==false) {
+        mAuth.createUserWithEmailAndPassword(email, password)
+                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                    @Override
+                    public void onComplete(@NonNull Task<AuthResult> task) {
+                        if (task.isSuccessful()) {
+                            user=mAuth.getCurrentUser();
+                            // Sign in success, update UI with the signed-in user's information
+                            Toast.makeText(RegisterActivity.this, "User Registered Succesful", Toast.LENGTH_SHORT).show();
+                            Intent i = new Intent(RegisterActivity.this, EditProfile.class);
+                           // i.putExtra("user",user); //pass the user to the Profile activity
+                            startActivity(i);
+                            finish();
+                        }else{
+                            Toast.makeText(RegisterActivity.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+//        }else{
+//            Toast.makeText(RegisterActivity.this, "User is already registered", Toast.LENGTH_SHORT).show();
+//        }
+    }
+    public void clickRegister(View view) throws ExecutionException, InterruptedException {
 
-         email=emailET.getText().toString();
-         password=passwordET.getText().toString();
-         registerUser();
-     }
+        email=emailET.getText().toString();
+        password=passwordET.getText().toString();
+        registerUser();
+    }
 }
+

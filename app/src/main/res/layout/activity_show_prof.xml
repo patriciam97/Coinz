@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ShowProf">
+
+    <Button
+        android:id="@+id/forgotbtn"
+        android:layout_width="254dp"
+        android:layout_height="36dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/button2"
+        android:fontFamily="sans-serif"
+        android:onClick="forgotPassword"
+        android:text="Change your password"
+        android:textColor="@android:color/background_light" />
+
+    <Button
+        android:id="@+id/editbtn"
+        android:layout_width="255dp"
+        android:layout_height="36dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="52dp"
+        android:background="@drawable/button2"
+        android:fontFamily="sans-serif"
+        android:onClick="EditUser"
+        android:text="Update your details"
+        android:textColor="@android:color/background_light" />
+
+   <TableLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="223dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="116dp"
+        android:stretchColumns="1">
+
+
+        <TextView
+            android:id="@+id/nameval"
+            android:layout_width="104dp"
+            android:gravity="center"
+            android:paddingBottom="40dp"
+            android:text="Full Name"
+            android:textAlignment="center"
+            android:textSize="25sp" />
+
+        <TableRow>
+
+            <ImageView
+                android:layout_width="106dp"
+                android:layout_height="50dp"
+                android:padding="5dp"
+                android:textAlignment="center"
+                app:srcCompat="@drawable/mailing" />
+
+            <TextView
+                android:id="@+id/emailval"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:padding="5dp"
+                android:text="patriciamilou97@gmail.com"
+                android:textAlignment="textStart"
+                android:textSize="17dp" />
+        </TableRow>
+
+        <TableRow>
+
+            <ImageView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="5dp"
+                android:textAlignment="center"
+                app:srcCompat="@drawable/mobilephone" />
+
+            <TextView
+                android:id="@+id/numberval"
+                android:layout_width="wrap_content"
+                android:padding="5dp"
+                android:text="007564060775"
+                android:textAlignment="textStart"
+                android:textSize="17dp" />
+        </TableRow>
+
+        <TableRow>
+
+            <ImageView
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:padding="5dp"
+                android:textAlignment="center"
+                app:srcCompat="@drawable/balloons" />
+
+            <TextView
+                android:id="@+id/dobval"
+                android:layout_width="wrap_content"
+                android:padding="5dp"
+                android:text="05/08/1997"
+                android:textAlignment="textStart"
+                android:textSize="17dp" />
+
+        </TableRow>
+    </TableLayout>
+
+    <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/profile"
+        android:layout_width="195dp"
+        android:layout_height="176dp"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="26dp"
+        android:src="@drawable/camerashutter" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:background="@android:color/background_light"
+        android:elevation="10dp"
+        android:indeterminateTint="#5ed0db"
+        android:progressBackgroundTint="@android:color/background_light"
+        android:progressBackgroundTintMode="src_over"
+        android:visibility="visible" />
+
+</RelativeLayout>

@@ -1,23 +1,42 @@
 package milou.patricia.coinz;
 
 
+import android.content.ClipData;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Location;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
+import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Icon;
@@ -30,6 +49,7 @@ import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.android.core.location.*;
 import com.mapbox.android.core.permissions.PermissionsManager;
+import com.mapbox.mapboxsdk.maps.MapboxMapOptions;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
@@ -41,17 +61,22 @@ import org.json.JSONObject;
 
 import java.text.DateFormat;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener,AsyncResponse{
     private ProgressBar pgsBar;
     private FirebaseAuth mAuth;
+    private FirebaseUser user;
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private MapView mapView;
     private MapboxMap map;
     private Button centremapbtn;
@@ -63,16 +88,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private String mapstr="";
     private JSONObject json;
     private IconFactory iconFactory;
-    private Bitmap[] p= new Bitmap[10];
-    private Bitmap[] d= new Bitmap[10];
-    private Bitmap[] q= new Bitmap[10];
-    private Bitmap[] s= new Bitmap[10];
     private Icon icon ;
-    private Bitmap imageBitmap;
-    private Bitmap  redMarker,blueMarker,greenMarker,yellowMarker;
-    private ArrayList<MarkerOptions> markers= new ArrayList<>();
+    public static String shil,peny,dolr,quid;
+    ArrayList<Coin> markers= new ArrayList<Coin>();
     private Bitmap[] IMarkers= new Bitmap[10];
-
+    Coin closestcoin = new Coin();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -88,10 +108,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         String date1=dateFormat.format(date);
         //user
         mAuth=FirebaseAuth.getInstance();
+        user= mAuth.getCurrentUser();
 
         String maplink = "http://www.homepages.inf.ed.ac.uk/stg/coinz/" +date1+ "/coinzmap.geojson";
         Log.i("map link", maplink);
-      //  DownloadFileTask dft = new DownloadFileTask();
         new DownloadFileTask(this).execute(maplink);
         iconFactory= IconFactory.getInstance(MainActivity.this);
         for(int i=0;i<10;i++){
@@ -99,30 +119,59 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
             IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
         }
+        AHBottomNavigation bottomNavigation=findViewById(R.id.bottom_navigation);
+        AHBottomNavigationItem item1 = new AHBottomNavigationItem(R.string.tab_1, R.drawable.profile, R.color.color_tab_1);
+        AHBottomNavigationItem item2 = new AHBottomNavigationItem(R.string.tab_2, R.drawable.wallet, R.color.color_tab_1);
+        AHBottomNavigationItem item3 = new AHBottomNavigationItem(R.string.tab_1, R.drawable.profile,R.color.color_tab_1);
+        // Add items
+        bottomNavigation.addItem(item1);
+        bottomNavigation.addItem(item2);
+        bottomNavigation.addItem(item3);
+        // Change colors
+        bottomNavigation.setAccentColor(Color.parseColor("#99d8d6"));
+        bottomNavigation.setInactiveColor(Color.parseColor("#99d8d6"));
+
+        bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
+            @Override
+            public boolean onTabSelected(int position, boolean wasSelected) {
+                if (position==0){
+                    Profile();
+                }else if (position==1){
+                    Wallet();
+                }
+                return true;
+            }
+        });
     }
 
 
     public void processFinish(String output){
         mapstr=output;
         try {
-            addMarkers();
+            ReadJSON();
             Log.i("async","done");
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
-    public void addMarkers()throws JSONException {
+    public void ReadJSON()throws JSONException {
         JSONArray features;
+        JSONObject rates;
         while(mapstr!="") {
             json = new JSONObject(mapstr);
             Log.i("map",mapstr);
             String dat= json.getString("date-generated");
+            rates=json.getJSONObject("rates");
+            shil =rates.getString("SHIL").toString();
+            peny =rates.getString("PENY").toString();
+            quid =rates.getString("QUID").toString();
+            dolr =rates.getString("DOLR").toString();
            features=json.getJSONArray("features");
            for(int i=0;i<features.length();i++){
                JSONObject feature =features.getJSONObject(i);
                //get properties
                JSONObject properties =feature.getJSONObject("properties");
-               //String id =properties.getString("id");
+               String id =properties.getString("id");
                String value =properties.getString("value");
                String currency =properties.getString("currency");
                String markersymbol =properties.getString("marker-symbol");
@@ -132,16 +181,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                JSONArray coordinates =geometry.getJSONArray("coordinates");
                String lng=coordinates.get(0).toString();
                String lat=coordinates.get(1).toString();
-               //icon to use
-               icon=getNumIcon(markersymbol);
-               icon=getColourIcon(icon,currency);
-               addMarker(lat,lng, value,icon);
+               //if that coin is included in Firebase(wallet) dont show it
+               DocumentReference docRef = db.collection("Users").document(user.getEmail()).collection("Coins").document(id);
+               docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                   @Override
+                   public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                       if (task.isSuccessful()) {
+                           DocumentSnapshot document = task.getResult();
+                           if (document.exists()) {
+
+                           } else {
+                               icon = getNumIcon(markersymbol);
+                               icon = getColourIcon(icon, currency);
+                               Coin coin = new Coin(id, value, currency, markersymbol, lat, lng);
+                               addMarker(coin, icon);
+                           }
+                       } else {
+                           Log.d("wallet", "get failed with ", task.getException());
+                       }
+                   }
+               });
            }
-           break;
+            break;
         }
         pgsBar = (ProgressBar)findViewById(R.id.pBar);
         pgsBar.setVisibility(View.GONE);
     }
+
     public Icon getNumIcon(String markersymbol){
         switch (markersymbol) {
             case "0": return iconFactory.fromBitmap(IMarkers[0]);
@@ -171,8 +237,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             break;
             case "QUID": to =Color.rgb(0,153,51);  //green
                             break;
-
         }
+
         for(int i = 0; i < allpixels.length; i++)
         {
             if(allpixels[i] == Color.rgb(0,174,239))
@@ -185,20 +251,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
        return iconFactory.fromBitmap(bmp);
     }
 
-    public void addMarker(String lat,String lng, String value,Icon icon){
+    public void addMarker(Coin coin,Icon icon){
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
                 // One way to add a marker view
                 MarkerOptions m= new MarkerOptions()
-                        .position(new LatLng(Double.parseDouble(lat),Double.parseDouble(lng)))
-                        //.title(value.substring(0,1))
+                        .position(coin.getLatLng())
                         .setIcon(icon);
+                Marker marker= m.getMarker();
+                coin.addMaker(marker);
+                markers.add(coin);
                 mapboxMap.addMarker(m);
-                markers.add(m);
             }
         });
-
+    }
+    public void removeMarker(Marker marker){
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                mapboxMap.removeMarker(marker);
+            }
+        });
     }
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
@@ -275,6 +349,65 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    public void CheckIfClosetoACoin(View view) {
+        if(markers.size()>0) {
+            Location userLocation = locationOrigin;
+            float[] result = new float[1];
+            LatLng coin = markers.get(0).getLatLng();
+            Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                    coin.getLatitude(), coin.getLongitude(), result);
+            Double minimumDist = (double) result[0];
+
+            for (int x = 1; x < markers.size(); x++) {
+                coin = markers.get(x).getLatLng();
+                Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                        coin.getLatitude(), coin.getLongitude(), result);
+                Double dist = (double) result[0];
+                if (dist < minimumDist) {
+                    minimumDist = dist;
+                    closestcoin = markers.get(x);
+                }
+            }
+            if (minimumDist <= 100000) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                // Get the layout inflater
+                LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+                View view2= inflater.inflate(R.layout.bravo, null);
+                TextView title =view2.findViewById(R.id.title);
+                title.setText("Do you want to collect it?");
+                TextView info =view2.findViewById(R.id.info);
+                String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
+                info.setText(text);
+                builder.setView(view2)
+                        // Add action buttons
+                        .setPositiveButton("Yeah!", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                addCoin();
+                            }
+                        }).setNegativeButton("Nah", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // Do nothing.
+                    }
+                }).show();
+            }
+        }
+    }
+    public void addCoin(){
+        Toast.makeText(MainActivity.this,"New Coin Added", Toast.LENGTH_SHORT).show();
+        closestcoin.addInWallet();
+        markers.remove(closestcoin);
+        removeMarker(closestcoin.getMarker());
+    }
+    public void Profile(){
+        Intent i = new Intent(MainActivity.this, ShowProf.class);
+        startActivity(i);
+   //     finish();
+    }
+    public void Wallet(){
+        Intent i = new Intent(MainActivity.this, WalletActivity.class);
+        startActivity(i);
+        //     finish();
+    }
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {
     }
@@ -321,7 +454,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (locationLayerPlugin != null) {
             locationLayerPlugin.onStart();
         }
-        FirebaseAuth.getInstance().signOut();
+      //  FirebaseAuth.getInstance().signOut();
     }
 
     @Override
@@ -337,7 +470,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             locationEngine.deactivate();
         }
         mapView.onDestroy();
-        FirebaseAuth.getInstance().signOut();
+    //    FirebaseAuth.getInstance().signOut();
     }
 
     @Override

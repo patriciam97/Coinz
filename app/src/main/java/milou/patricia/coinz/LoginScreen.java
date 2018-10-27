@@ -4,17 +4,24 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
+import android.media.Image;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.BoringLayout;
 import android.text.Editable;
+import android.text.InputType;
+import android.text.method.HideReturnsTransformationMethod;
+import android.text.method.PasswordTransformationMethod;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -30,7 +37,8 @@ public class LoginScreen extends AppCompatActivity {
     private EditText emailInput,passwordInput;
     private String email,password;
     private CheckBox checkBox ;
-    private Button btnlogin,btnregister ;
+    private ImageView eye;
+    private boolean see=false;
     public FirebaseUser user;
     private static final String PREFS_NAME = "preferences";
     private static final String PREF_EMAIL = "Username";
@@ -43,15 +51,40 @@ public class LoginScreen extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login_screen);
         mAuth = FirebaseAuth.getInstance();
-        btnlogin= (Button)findViewById(R.id.loginbtn);
-        btnregister= (Button)findViewById(R.id.registerbtn);
+        eye=findViewById(R.id.eye);
         emailInput=findViewById(R.id.emailInput);
         passwordInput=findViewById(R.id.passwordInput);
         checkBox= (CheckBox)findViewById(R.id.rememberme);
-
+        checkBox.setChecked(true); //by default set it to true
 
     }
-
+    public void passwordbtn (View view){
+        if(see==true) {//normal text form
+            hidepassword();
+        }else{
+            showpassword();
+        }
+    }
+    public void showpassword(){
+        Log.v("see before", "" + see);
+        //passwordInput.setInputType(InputType.TYPE_TEXT_VARIATION_NORMAL);
+        passwordInput.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
+        see=true;
+        int imageResource = getResources().getIdentifier("@drawable/eye", null, getPackageName());
+        Drawable res = getResources().getDrawable(imageResource);
+        eye.setImageDrawable(res);
+        Log.v("see after", "" + see);
+    }
+    public void hidepassword(){
+        Log.v("see before", "" + see);
+       // passwordInput.setInputType(InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        passwordInput.setTransformationMethod(PasswordTransformationMethod.getInstance());
+        see=false;
+        int imageResource = getResources().getIdentifier("@drawable/mascara", null, getPackageName());
+        Drawable res = getResources().getDrawable(imageResource);
+        eye.setImageDrawable(res);
+        Log.v("see after", "" + see);
+    }
     @Override
     public void onStart() {
         super.onStart();
@@ -80,6 +113,7 @@ public class LoginScreen extends AppCompatActivity {
                             updateUI(user);
                             Intent i = new Intent(LoginScreen.this, MainActivity.class);
                             startActivity(i);
+                            finish();
 
                         } else {
                             // If sign in fails, display a message to the user.
