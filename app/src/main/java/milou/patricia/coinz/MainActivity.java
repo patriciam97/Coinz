@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         AHBottomNavigation bottomNavigation=findViewById(R.id.bottom_navigation);
         AHBottomNavigationItem item1 = new AHBottomNavigationItem(R.string.tab_1, R.drawable.profile, R.color.color_tab_1);
         AHBottomNavigationItem item2 = new AHBottomNavigationItem(R.string.tab_2, R.drawable.wallet, R.color.color_tab_1);
-        AHBottomNavigationItem item3 = new AHBottomNavigationItem(R.string.tab_1, R.drawable.profile,R.color.color_tab_1);
+        AHBottomNavigationItem item3 = new AHBottomNavigationItem("Friends", R.drawable.friends,R.color.color_tab_1);
         // Add items
         bottomNavigation.addItem(item1);
         bottomNavigation.addItem(item2);
@@ -138,6 +138,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Profile();
                 }else if (position==1){
                     Wallet();
+                }else if(position==2){
+                    Friends();
                 }
                 return true;
             }
@@ -368,11 +370,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     closestcoin = markers.get(x);
                 }
             }
-            if (minimumDist <= 100000) {
+            if (minimumDist <= 25000) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 // Get the layout inflater
                 LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-                View view2= inflater.inflate(R.layout.bravo, null);
+                View view2= inflater.inflate(R.layout.popup2, null);
                 TextView title =view2.findViewById(R.id.title);
                 title.setText("Do you want to collect it?");
                 TextView info =view2.findViewById(R.id.info);
@@ -389,6 +391,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         // Do nothing.
                     }
                 }).show();
+            }else{
+                Toast.makeText(MainActivity.this,"Get closer!",Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -401,12 +405,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void Profile(){
         Intent i = new Intent(MainActivity.this, ShowProf.class);
         startActivity(i);
-   //     finish();
     }
     public void Wallet(){
         Intent i = new Intent(MainActivity.this, WalletActivity.class);
         startActivity(i);
-        //     finish();
+    }
+    private void Friends() {
+        Intent i = new Intent(MainActivity.this, FriendsActivity.class);
+        startActivity(i);
     }
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {

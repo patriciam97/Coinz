@@ -8,7 +8,7 @@
 
     <Spinner
         android:id="@+id/orderSpinner2"
-        android:layout_width="152dp"
+        android:layout_width="161dp"
         android:layout_height="wrap_content"
         android:layout_alignTop="@+id/orderSpinner"
         android:layout_toStartOf="@+id/imageButton"
@@ -47,8 +47,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="230dp"
+        android:layout_centerVertical="true"
         android:orientation="vertical"
         android:padding="5dp">
 
@@ -62,7 +61,7 @@
                 android:id="@+id/tv1"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="5dp"
+                android:padding="7dp"
                 android:text="Currency"
                 android:textAlignment="center"
                 android:textSize="16dp" />
@@ -71,7 +70,7 @@
                 android:id="@+id/tv2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="5dp"
+                android:padding="7dp"
                 android:text="Value"
                 android:textAlignment="center"
                 android:textSize="16dp" />
@@ -82,7 +81,7 @@
                 android:layout_height="match_parent"
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
-                android:padding="5dp"
+                android:padding="7dp"
                 android:text="Date Collected"
                 android:textAlignment="center"
                 android:textSize="16dp" />
@@ -91,7 +90,7 @@
                 android:id="@+id/tv5"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="5dp"
+                android:padding="7dp"
                 android:text="Expiry Date"
                 android:textAlignment="center"
                 android:textSize="16dp" />
@@ -101,7 +100,7 @@
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="307dp"
+        android:layout_height="257dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true">
 
@@ -117,23 +116,19 @@
                 android:layout_alignParentTop="true"
                 android:layout_marginTop="1dp"
                 android:orientation="vertical"
-                android:paddingTop="25dp"
-                android:padding="5dp"/>
+                android:padding="5dp"
+                android:paddingTop="25dp" />
         </RelativeLayout>
-        <!--<LinearLayout-->
-        <!--android:layout_width="fill_parent"-->
-        <!--android:layout_height="fill_parent">-->
 
-        <!--</LinearLayout>-->
     </ScrollView>
 
     <Spinner
         android:id="@+id/orderSpinner"
         android:layout_width="175dp"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/textView2"
-        android:layout_marginEnd="-30dp"
-        android:layout_toStartOf="@+id/textView2"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="224dp"
         android:spinnerMode="dropdown"
         android:textAlignment="textStart" />
 
@@ -141,17 +136,18 @@
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_below="@+id/rates"
+        android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
+        android:layout_marginTop="192dp"
         android:text="Order By:"
         android:textSize="16sp" />
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="36dp"
-        android:layout_height="38dp"
-        android:layout_alignBottom="@+id/orderSpinner"
+        android:layout_width="28dp"
+        android:layout_height="26dp"
         android:layout_alignParentEnd="true"
+        android:layout_alignTop="@+id/orderSpinner"
         android:background="@android:color/transparent"
         android:onClick="readSpinner"
         android:scaleType="fitCenter"

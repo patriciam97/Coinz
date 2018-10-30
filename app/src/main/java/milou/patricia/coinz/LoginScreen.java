@@ -126,7 +126,7 @@ public class LoginScreen extends AppCompatActivity {
     }
 
     public void forgotPassword(View view){
-            AlertDialog.Builder builder = new AlertDialog.Builder(LoginScreen.this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(LoginScreen.this);
         // Get the layout inflater
         LayoutInflater inflater = LoginScreen.this.getLayoutInflater();
         View view2= inflater.inflate(R.layout.popup, null);

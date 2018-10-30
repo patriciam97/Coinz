@@ -43,6 +43,7 @@
         <activity android:name=".ShowProf" />
         <activity android:name=".EditProfile" />
         <activity android:name=".WalletActivity" />
+        <activity android:name=".FriendsActivity"></activity>
     </application>
 
 </manifest>
