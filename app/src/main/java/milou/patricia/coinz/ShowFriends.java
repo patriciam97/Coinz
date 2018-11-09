@@ -1,7 +1,11 @@
 package milou.patricia.coinz;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.support.annotation.NonNull;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.Gravity;
@@ -25,9 +29,13 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.lang.ref.WeakReference;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import io.grpc.Context;
 
 public class ShowFriends {
     private FirebaseAuth mAuth;
@@ -113,6 +121,7 @@ public class ShowFriends {
     }
 
     private void sendcoin(String toemail) {
+
         db.collection("Users").document(user.getEmail()).collection("Coins").document(coinid)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
@@ -127,9 +136,23 @@ public class ShowFriends {
                         addcoin(toemail,currency,val,dateC,dateE);
                         //delete this document
                         doc.getReference().delete();
+
                     }
                 });
+
     }
+//    public static boolean hasOpenedDialogs(FragmentActivity activity) {
+//        List<Fragment> fragments = activity.getSupportFragmentManager().getFragments();
+//        if (fragments != null) {
+//            for (Fragment fragment : fragments) {
+//                if (fragment instanceof DialogFragment) {
+//                    return true;
+//                }
+//            }
+//        }
+//
+//        return false;
+//    }
 
     private void addcoin(String toemail, String currency, Double val, String dateC, String dateE) {
         Map<String, Object> coin = new HashMap<>();

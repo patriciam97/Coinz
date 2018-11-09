@@ -63,85 +63,7 @@ public class FriendsActivity extends AppCompatActivity {
     public void showFriends() {
         ShowFriends sf= new ShowFriends(v,null);
         sf.showTable();
-//        table.removeAllViews();
-//
-//        db.collection("Users").document(user.getEmail()).collection("Friends")
-//                .orderBy("Email")
-//                .get()
-//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                        if (task.isSuccessful()) {
-//                            int index=1;
-//                            if(task.getResult().size()>0) {
-//                                for (QueryDocumentSnapshot document : task.getResult()) {
-//                                    //new row
-//                                    TableRow row = new TableRow(FriendsActivity.this);
-//                                    if(index % 2==0){
-//                                        row.setBackgroundColor(Color.rgb(242, 242, 242));
-//                                    }
-//                                    index++;
-//                                    row.setTextAlignment(TableRow.TEXT_ALIGNMENT_CENTER);
-//                                    row.setOrientation(TableRow.HORIZONTAL);
-//                                    row.setGravity(Gravity.CENTER_HORIZONTAL);
-//                                    row.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-//                                    //set the format of the Text Views
-//                                    TextView em= new TextView(FriendsActivity.this);
-//                                    em.setText(document.getString("Email"));
-//                                    em.setTextSize(17);
-//                                    em.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-//                                    //once the user clicks on the row
-//                                    row.setOnClickListener(new View.OnClickListener() {
-//                                        @Override
-//                                        public void onClick(View v) {
-//                                            showProf(document.getString("Email"));
-//                                            Toast.makeText(FriendsActivity.this, "ok", Toast.LENGTH_SHORT).show();
-//                                        }
-//                                    });
-//
-//                                    //add the row in the table
-//                                    table.addView(row);
-//                                    row.addView(em);
-//                                }
-//                            }else{
-//                                TableRow row = new TableRow(FriendsActivity.this);
-//                                TextView tv = new TextView(FriendsActivity.this);
-//                                tv.setTextColor(Color.BLACK);
-//                                tv.setTextSize(16);
-//                                tv.setTextAlignment(TextView.TEXT_ALIGNMENT_CENTER);
-//                                tv.setPadding(30,30,30,30);
-//                                tv.setText("No friends.");
-//                                table.addView(row);
-//                                row.addView(tv);
-//                            }
-//                        } else {
-//                            //if an exception occurs
-//                            Log.e("Exception",task.getException().getMessage());
-//                        }
-//                    }
-//                });
-
     }
-
-//    public void showProf(String email){
-//        db.collection("Users").document(email).collection("Info")
-//                .get()
-//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                        if (task.isSuccessful()) {
-//                           for (QueryDocumentSnapshot document : task.getResult()){
-//                               String name= document.getString("Full Name");
-//                               String number= document.getString("Telephone Number");
-//                               String dob= document.getString("Date of Birth");
-//                               profpopup(email,name,dob,number);
-//                           }
-//                        }else{
-//
-//                        }
-//                    }
-//                });
-//    }
     public void addAFriend(View view){
         LayoutInflater inflater = FriendsActivity.this.getLayoutInflater();
         View view2= inflater.inflate(R.layout.popup, null);
@@ -250,17 +172,5 @@ public class FriendsActivity extends AppCompatActivity {
 
 
     }
-//    private void profpopup(String email,String name,String dob, String number){
-//        AlertDialog.Builder builder = new AlertDialog.Builder(FriendsActivity.this);
-//        // Get the layout inflater
-//        LayoutInflater inflater = FriendsActivity.this.getLayoutInflater();
-//        View view2= inflater.inflate(R.layout.popup2, null);
-//        TextView title=view2.findViewById(R.id.title);
-//        title.setText(email);
-//        TextView info =view2.findViewById(R.id.info);
-//        String text= "Full Name: "+name+"\nContact Number: "+number+"\nDate of Birth: "+dob;
-//        info.setText(text);
-//        info.setTextSize(18);
-//        builder.setView(view2).show();
-//    }
+
 }

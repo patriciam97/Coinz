@@ -11,6 +11,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -43,7 +44,8 @@
         <activity android:name=".ShowProf" />
         <activity android:name=".EditProfile" />
         <activity android:name=".WalletActivity" />
-        <activity android:name=".FriendsActivity"></activity>
+        <activity android:name=".FriendsActivity" />
+        <activity android:name=".BankActivity"></activity>
     </application>
 
 </manifest>

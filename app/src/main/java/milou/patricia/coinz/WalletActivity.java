@@ -22,18 +22,25 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ServerValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.ServerTimestamp;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 public class WalletActivity extends AppCompatActivity {
@@ -41,9 +48,9 @@ public class WalletActivity extends AppCompatActivity {
     private StorageReference mStorageRef;
     private FirebaseUser user;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
-    private String date;
+    private Date date;
     private Spinner dropdown,dropdown2;
-    private int pos1,pos2;
+    private int coinsdepositedtoday=0;
     private TableLayout table;
     private TextView curr,val,dateC,dateE;
 
@@ -56,8 +63,8 @@ public class WalletActivity extends AppCompatActivity {
         user= mAuth.getCurrentUser();
         //Get current Date
         Calendar in = Calendar.getInstance();
-        SimpleDateFormat dformat = new SimpleDateFormat("dd/MM/yy");
-        date=dformat.format(in.getTime());
+        //date=dformat.format(in.getTime());
+        date=in.getTime();
         //remove expired coins
         removeExpiredCoins ();
         //checkforgifts
@@ -83,6 +90,29 @@ public class WalletActivity extends AppCompatActivity {
         dropdown.setSelection(0);
         dropdown2.setSelection(0);
         showTable("Currency", Query.Direction.ASCENDING);
+        coinscounter();
+    }
+
+    private void coinscounter() {
+
+        db.collection("Users").document(user.getEmail()).collection("Bank")
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if(task.isSuccessful()){
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                SimpleDateFormat df=new SimpleDateFormat("dd/MM/yyyy");
+                                String d=df.format(new Date(document.getLong("Deposited Date")));
+                                String today=df.format(date);
+                                if(today.equals(d)){
+                                    coinsdepositedtoday++;
+                                }
+
+                            }
+                        }
+                    }
+                });
     }
 
     public void readSpinner(View view){
@@ -120,26 +150,43 @@ public class WalletActivity extends AppCompatActivity {
     public void removeExpiredCoins (){
         //get the references of the documents where the expiry date has passed and delete them
         db.collection("Users").document(user.getEmail()).collection("Coins")
-                .whereLessThan("Expiry Date", date)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        Date exp=Calendar.getInstance().getTime();
+                        int counter=0;
                         if (task.isSuccessful()) {
-                            if(task.getResult().size()>0) {
-                                //if documents found
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-                                    //delete the reference
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                try {
+                                    exp=new SimpleDateFormat("dd/MM/yyyy").parse(document.getString("Expiry Date"));
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                }
+                                if (date.before(exp)){
+                                    counter++;
                                     document.getReference().delete();
                                 }
-                                if(task.getResult().size()>1) {
-                                    Toast.makeText(WalletActivity.this, task.getResult().size() + " coins expired.", Toast.LENGTH_LONG).show();
-                                }else{
-                                    Toast.makeText(WalletActivity.this, task.getResult().size() + " coin expired.", Toast.LENGTH_LONG).show();
-                                }
-                            }else{
-                                Toast.makeText(WalletActivity.this, "No coins expired.", Toast.LENGTH_LONG).show();
                             }
+                            if(counter>1) {
+                                    Toast.makeText(WalletActivity.this, counter + " coins expired.", Toast.LENGTH_LONG).show();
+                                }else{
+                                    Toast.makeText(WalletActivity.this, counter + " coin expired.", Toast.LENGTH_LONG).show();
+                                }
+//                            if(task.getResult().size()>0) {
+//                                //if documents found
+//                                for (QueryDocumentSnapshot document : task.getResult()) {
+//                                    //delete the reference
+//                                    document.getReference().delete();
+//                                }
+//                                if(task.getResult().size()>1) {
+//                                    Toast.makeText(WalletActivity.this, task.getResult().size() + " coins expired.", Toast.LENGTH_LONG).show();
+//                                }else{
+//                                    Toast.makeText(WalletActivity.this, task.getResult().size() + " coin expired.", Toast.LENGTH_LONG).show();
+//                                }
+//                            }else{
+//                                Toast.makeText(WalletActivity.this, "No coins expired.", Toast.LENGTH_LONG).show();
+//                            }
                         } else {
                             //if an exception occurs
                             Log.e("Exception",task.getException().getMessage());
@@ -224,7 +271,7 @@ public class WalletActivity extends AppCompatActivity {
                                     row.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
-                                            coinfunction(document.getId(),currency,value);
+                                            coinfunction(document);
                                         }
                                     });
 
@@ -254,20 +301,19 @@ public class WalletActivity extends AppCompatActivity {
                 });
     }
 
-    private void coinfunction(String id,String curr,Double value) {
+    private void coinfunction(QueryDocumentSnapshot document) {
         LayoutInflater inflater = WalletActivity.this.getLayoutInflater();
         View view2= inflater.inflate(R.layout.coinpopup, null);
         Dialog dialog = new AlertDialog.Builder(this).setView(view2).show();
         //View view2= inflater.inflate(R.layout.coinpopup, null);
         TextView title =view2.findViewById(R.id.cointitle);
-        title.setText(curr+": "+value);
+        title.setText(document.getString("Currency")+": "+document.getDouble("Value"));
         //delete coin from wallet
         TextView delete =view2.findViewById(R.id.deletecoin);
         delete.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                db.collection("Users").document(user.getEmail()).collection("Coins").document(id)
-                        .delete()
+                document.getReference().delete()
                         .addOnSuccessListener(new OnSuccessListener<Void>() {
                             @Override
                             public void onSuccess(Void aVoid) {
@@ -295,13 +341,64 @@ public class WalletActivity extends AppCompatActivity {
                 View view3= inflater.inflate(R.layout.friendspopup, null);
                 Dialog dialog2 = new AlertDialog.Builder(WalletActivity.this).setView(view3).show();
                 //add friends in the table
-                ShowFriends sf= new ShowFriends(view3,id);
+                ShowFriends sf= new ShowFriends(view3,document.getId().toString());
                 sf.showTable();
             }
         });
 
-    }
+//        //deposit coin into bank account
+        TextView deposit =view2.findViewById(R.id.deposit);
+        deposit.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (coinsdepositedtoday < 26) {
+//                //get map of coin
+                    Double newval = document.getDouble("Value");
+                    String curr = document.getString("Currency");
+                    switch (curr) {
+                        case "DOLR":
+                            newval = newval * Double.parseDouble(MainActivity.dolr);
+                            break;
+                        case "PENY":
+                            newval = newval * Double.parseDouble(MainActivity.peny);
+                            break;
+                        case "QUID":
+                            newval = newval * Double.parseDouble(MainActivity.quid);
+                            break;
+                        case "SHIL":
+                            newval = newval * Double.parseDouble(MainActivity.shil);
+                            break;
+                    }
+                    Map<String, Object> coin = new HashMap<String, Object>();
+                    coin.put("Currency", "GOLD");
+                    coin.put("Value", newval);
+                    coin.put("Deposited Date", date.getTime());
+                    db.collection("Users").document(user.getEmail()).collection("Bank").document(document.getId()).set(coin)
+                            .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                @Override
+                                public void onComplete(@NonNull Task<Void> task) {
+                                    if (task.isSuccessful()) {
+                                        Toast.makeText(WalletActivity.this, "Coin deposited.", Toast.LENGTH_SHORT).show();
+                                        document.getReference().delete();
+                                        readSpinner(getCurrentFocus());
+                                        dialog.dismiss();
+                                        coinsdepositedtoday++;
+                                    }
+                                }
+                            });
 
+                }else{
+                    Toast.makeText(WalletActivity.this,"25 coins have been already deposited. Try again tomorrow.",Toast.LENGTH_SHORT).show();
+                    readSpinner(getCurrentFocus());
+                    dialog.dismiss();
+                }
+            }
+        });
+
+    }
+    public void sentdone(){
+
+    }
     public void setTextViews(Boolean gift){
         int col=0;
         if (gift==true){
