@@ -7,6 +7,10 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Location;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomSheetBehavior;
@@ -83,37 +87,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener,AsyncResponse{
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener,AsyncResponse,SensorEventListener, StepListener{
+    //firebase objects
     private ProgressBar pgsBar;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    //objects used for the implementation of map
+    private PermissionsManager permissionsManager;
     private MapView mapView;
     private MapboxMap map;
-    private Button centremapbtn;
-    private Boolean campus=false;
-    private PermissionsManager permissionsManager;
     private LocationEngine locationEngine;
     private LocationLayerPlugin locationLayerPlugin;
     private Location locationOrigin;
     private String mapstr="";
     private JSONObject json;
+    private Bitmap[] IMarkers= new Bitmap[10];
     private IconFactory iconFactory;
     private Icon icon ;
-    public static String shil,peny,dolr,quid;
-    ArrayList<Coin> markers= new ArrayList<Coin>();
-    private Bitmap[] IMarkers= new Bitmap[10];
-    Coin closestcoin = new Coin();
-    private String selected="";
     private MapboxNavigation navigation;
-    private NavigationMapRoute navigationMapRoute;
-    private boolean bottomSheetVisible = true;
-    private NavigationView navigationView;
-    private FloatingActionButton fabNightModeToggle;
+    //objects that implement step detector
+    private SensorManager sensorManager;
+    private Sensor accel;
+    private StepDetector simpleStepDetector;
+    private static final String TEXT_NUM_STEPS = "Number of Steps: ";
+    private int numSteps;
+    //others
+    private Button centremapbtn;
+    private Boolean campus=false;
+    public static String shil,peny,dolr,quid;
+    private ArrayList<Coin> markers= new ArrayList<Coin>();
+    private Coin closestcoin = new Coin();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         super.onCreate(savedInstanceState);
+        //set the map
         Mapbox.getInstance(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pqaWl3aHFqMWMyeDNsbXh4MndnY3hzMiJ9.Fqn_9bmuScR4IqUrUbP6lA");
         setContentView(R.layout.activity_main);
         mapView = (MapView) findViewById(R.id.mapView);
@@ -123,26 +132,34 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
         Date date = new Date();
         String date1=dateFormat.format(date);
-        //user
+        //get current user
         mAuth=FirebaseAuth.getInstance();
         user= mAuth.getCurrentUser();
-
+        //download todays map
         String maplink = "http://www.homepages.inf.ed.ac.uk/stg/coinz/" +date1+ "/coinzmap.geojson";
         Log.i("map link", maplink);
         new DownloadFileTask(this).execute(maplink);
+        //set marker icons as appropriate
         iconFactory= IconFactory.getInstance(MainActivity.this);
         for(int i=0;i<10;i++){
             String x=Integer.toString(i);
             Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
             IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
         }
+        //set up navigation
         editNavigationBars();
-
         navigation = new MapboxNavigation(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pvOTF6dm1iMGZsZTNxb3g1MDU0ZGtsYiJ9.R6jgvI9ZH7mUIIxwzJjW_Q");
+        //step sensor
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        simpleStepDetector = new StepDetector();
+        simpleStepDetector.registerListener(this);
+        numSteps = 0;
+        sensorManager.registerListener(MainActivity.this, accel, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
     private void editNavigationBars() {
-        //the bottom one
+        //set up the navigation bar
         AHBottomNavigation bottomNavigation=findViewById(R.id.bottom_navigation);
         bottomNavigation.setTitleState(AHBottomNavigation.TitleState.ALWAYS_SHOW);
         AHBottomNavigationItem item1 = new AHBottomNavigationItem(R.string.tab_1, R.drawable.profile, R.color.color_tab_1);
@@ -158,7 +175,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Change colors
         bottomNavigation.setAccentColor(Color.parseColor("#99d8d6"));
         bottomNavigation.setInactiveColor(Color.parseColor("#99d8d6"));
-
+        //set up the action of each item
         bottomNavigation.setOnTabSelectedListener(new AHBottomNavigation.OnTabSelectedListener() {
             @Override
             public boolean onTabSelected(int position, boolean wasSelected) {
@@ -177,7 +194,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
-
+    /**
+     * This function is called once the download of the map is complete
+     * @param output String read from the internet
+     */
     public void processFinish(String output){
         mapstr=output;
         try {
@@ -187,19 +207,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             e.printStackTrace();
         }
     }
+
+    /**
+     * This file turns the string from the processFinish function to a json file and reads the file
+     * @throws JSONException
+     */
     public void ReadJSON()throws JSONException {
         JSONArray features;
         JSONObject rates;
+        //while the text downloaded is not empty
         while(mapstr!="") {
+            //turn it into a json file
             json = new JSONObject(mapstr);
-            Log.i("map",mapstr);
-            String dat= json.getString("date-generated");
+            Log.i("Map Json",mapstr);
+            //read the rates
             rates=json.getJSONObject("rates");
             shil =rates.getString("SHIL").toString();
             peny =rates.getString("PENY").toString();
             quid =rates.getString("QUID").toString();
             dolr =rates.getString("DOLR").toString();
            features=json.getJSONArray("features");
+           //read all markers
            for(int i=0;i<features.length();i++){
                JSONObject feature =features.getJSONObject(i);
                //get properties
@@ -208,13 +236,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                String value =properties.getString("value");
                String currency =properties.getString("currency");
                String markersymbol =properties.getString("marker-symbol");
-               //String markercolor =properties.getString("marker-color");
-                //get coordinates
+               String markercolour =properties.getString("marker-color");
+               //get coordinates
                JSONObject geometry =feature.getJSONObject("geometry");
                JSONArray coordinates =geometry.getJSONArray("coordinates");
                String lng=coordinates.get(0).toString();
                String lat=coordinates.get(1).toString();
-               //if that coin is included in Firebase(wallet) dont show it
+               //check is that coin was collected today at an earlier play from the same user
                DocumentReference docRef = db.collection("Users").document(user.getEmail()).collection("Coins").document(id);
                docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                    @Override
@@ -222,25 +250,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                        if (task.isSuccessful()) {
                            DocumentSnapshot document = task.getResult();
                            if (document.exists()) {
-
+                                //if yes don't show it on the map
                            } else {
+                               //create the appropriate marker symbol
                                icon = getNumIcon(markersymbol);
-                               icon = getColourIcon(icon, currency);
-                               Coin coin = new Coin(id, value, currency, markersymbol, lat, lng);
+                               icon = getColourIcon(icon,markercolour);
+                               Coin coin = new Coin(id, value, currency, markersymbol,markercolour, lat, lng);
+                               //add that coin on the map
                                addMarker(coin, icon);
                            }
                        } else {
-                           Log.d("wallet", "get failed with ", task.getException());
+                           Log.d("Doc", "get failed with ", task.getException());
                        }
                    }
                });
            }
             break;
         }
+        //once all markers have been placed , switch the progress bar off.
         pgsBar = (ProgressBar)findViewById(R.id.pBar);
         pgsBar.setVisibility(View.GONE);
     }
 
+    /**
+     * Get the marker with the right symbol
+     * @param markersymbol
+     * @return
+     */
     public Icon getNumIcon(String markersymbol){
         switch (markersymbol) {
             case "0": return iconFactory.fromBitmap(IMarkers[0]);
@@ -256,22 +292,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
        return icon;
     }
-    public Icon getColourIcon(Icon icon,String currency){
+
+    /**
+     * Set the marker's icon to the right colour
+     * @param icon Current icon of marker
+     * @param colour Color to use
+     * @return New Icon of that marker
+     */
+    public Icon getColourIcon(Icon icon,String colour){
         final Bitmap bmp =icon.getBitmap();
         int [] allpixels = new int [bmp.getHeight() * bmp.getWidth()];
         bmp.getPixels(allpixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
-        int to=0;
-        switch (currency){
-            case "PENY": to =Color.rgb(255,0,0); //red
-                            break;
-            case "DOLR": to =Color.rgb(0,170,255); //blue
-                            break;
-            case "SHIL": to =Color.rgb(255,204,0);  //yellow
-                            break;
-            case "QUID": to =Color.rgb(0,153,51);  //green
-                            break;
-        }
-
+        int to =Color.parseColor(colour);
         for(int i = 0; i < allpixels.length; i++)
         {
             if(allpixels[i] == Color.rgb(0,174,239))
@@ -284,6 +316,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
        return iconFactory.fromBitmap(bmp);
     }
 
+    /**
+     * Add that marker on the map
+     * @param coin Current coin object
+     * @param icon Icon to use
+     */
     public void addMarker(Coin coin,Icon icon){
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -299,6 +336,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
     }
+
+    /**
+     * This function is called once the user collects a coin
+     * the marker of the collected coin has to be removed from the map
+     * @param marker Coin's marker
+     */
     public void removeMarker(Marker marker){
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -307,12 +350,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
     }
+
+    /**
+     * This function is called once the map is ready
+     * @param mapboxMap
+     */
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
         map=mapboxMap;
         enableLocation();
     }
 
+    /**
+     * This function retrived the user's location
+     */
     private void enableLocation(){
         // Check if permissions are enabled and if not request
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
@@ -329,6 +380,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             permissionsManager.requestLocationPermissions(this);
         }
     }
+
+    /**
+     * This function initializes the Location Engine
+     */
     @SuppressWarnings("MissingPermission")
     private void initializeLocationEngine(){
         LocationEngineProvider locationEngineProvider = new LocationEngineProvider(this);
@@ -344,206 +399,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
-    private void initializeLocationLayer(){
-        locationLayerPlugin=new LocationLayerPlugin(mapView,map,locationEngine);
-        locationLayerPlugin.setLocationLayerEnabled(true);
-        locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
-        locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
-    }
+//    private void initializeLocationLayer(){
+//        locationLayerPlugin=new LocationLayerPlugin(mapView,map,locationEngine);
+//        locationLayerPlugin.setLocationLayerEnabled(true);
+//        locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
+//        locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
+//    }
+
+    /**
+     * This function requests location updates
+     */
     @SuppressWarnings("MissingPermission")
     public void onConnected() {
         locationEngine.requestLocationUpdates();
 
     }
-    private void setCameraPosition(Location location){
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),location.getLongitude()),14.00));
-    }
-    public void centreMap(View view){
-        Log.i("button","clicked");
-        centremapbtn=(Button) findViewById(R.id.centremap);
-        if (campus==false){
-            campus=true; //whenever campus==true, then the map is focused on central campus
-            final Location campuslocation = new Location("central campus");
-            campuslocation.setLatitude(55.943877);
-            campuslocation.setLongitude(-3.187479);
-            setCameraPosition(campuslocation);
-            centremapbtn.setText("MY LOCATION");
-        }else{
-            campus=false;//otherwise, then the map is focused on the user's location
-            setCameraPosition(locationOrigin);
-           centremapbtn.setText("CENTRAL CAMPUS");
-        }
-    }
-    @Override
-    public void onLocationChanged(Location location) {
-        if(location!=null){
-            locationOrigin=location;
-            setCameraPosition(locationOrigin); //was location before
-        }
-    }
-    public Double getClosestCoin() {
-        Double minimumDist=0.0;
-        if (markers.size() > 0) {
-            Location userLocation = locationOrigin;
-            float[] result = new float[1];
-            LatLng coin = markers.get(0).getLatLng();
-            Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                    coin.getLatitude(), coin.getLongitude(), result);
-            minimumDist = (double) result[0];
-
-            for (int x = 1; x < markers.size(); x++) {
-                coin = markers.get(x).getLatLng();
-                Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                        coin.getLatitude(), coin.getLongitude(), result);
-                Double dist = (double) result[0];
-                if (dist < minimumDist) {
-                    minimumDist = dist;
-                    closestcoin = markers.get(x);
-                }
-            }
-
-            }
-        return minimumDist;
-    }
-    public void CheckIfClosetoACoin(View view) {
-        Double minimumDist=getClosestCoin();
-            if (minimumDist <= 25000) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                // Get the layout inflater
-                LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-                View view2= inflater.inflate(R.layout.popup2, null);
-                TextView title =view2.findViewById(R.id.title);
-                title.setText("Do you want to collect it?");
-                TextView info =view2.findViewById(R.id.info);
-                String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
-                info.setText(text);
-                builder.setView(view2)
-                        // Add action buttons
-                        .setPositiveButton("Yeah!", new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int whichButton) {
-                                addCoin();
-                            }
-                        }).setNegativeButton("Nah", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        // Do nothing.
-                    }
-                }).show();
-            }else{
-                Toast.makeText(MainActivity.this,"Get closer!",Toast.LENGTH_SHORT).show();
-            }
-    }
-
-    public void addCoin(){
-        Toast.makeText(MainActivity.this,"New Coin Added", Toast.LENGTH_SHORT).show();
-        closestcoin.addInWallet();
-        markers.remove(closestcoin);
-        removeMarker(closestcoin.getMarker());
-    }
-
-    public void navigateToClosestCoin(View view){
-        Double mindist=getClosestCoin();
-        while(closestcoin==null) {
-            System.out.println("not yet");
-        }
-        LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-        View view3 = inflater.inflate(R.layout.popup2, null);
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-        TextView title = view3.findViewById(R.id.title);
-        title.setText("Closest Coin Found:");
-        TextView info =view3.findViewById(R.id.info);
-        String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
-        info.setText(text);
-        builder.setView(view3)
-                // Add action buttons
-                .setPositiveButton("Start Navigation", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        Point destination = Point.fromLngLat(closestcoin.getLatLng().getLongitude(), closestcoin.getLatLng().getLatitude());
-                        getRoute(destination);
-                    }
-                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Do nothing.
-            }
-        }).show();
-    }
-
-    private void getRoute(Point dest){
-        Point origin = Point.fromLngLat(locationOrigin.getLongitude(),locationOrigin.getLatitude());
-        Point destination=dest;
-        NavigationRoute.builder(this)
-                .accessToken(Mapbox.getAccessToken())
-                .origin(origin)
-                .destination(destination)
-                .build()
-                .getRoute(new Callback<DirectionsResponse>() {
-                    @Override
-                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
-                        // You can get the generic HTTP info about the response
-                        Log.d("navigation", "Response code: " + response.code());
-                        if (response.body() == null) {
-                            Log.e("navigation", "No routes found, make sure you set the right user and access token.");
-                            return;
-                        } else if (response.body().routes().size() < 1) {
-                            Log.e("navigation", "No routes found");
-                            return;
-                        }
-
-                        DirectionsRoute currentRoute = response.body().routes().get(0);
-
-                        // Draw the route on the map
-//                        if (navigationMapRoute != null) {
-//                            navigationMapRoute.removeRoute();
-//                        } else {
-//                            navigationMapRoute = new NavigationMapRoute(null, mapView, map, R.style.NavigationMapRoute);
-//                        }
-//                        navigationMapRoute.addRoute(currentRoute);
-                        startNavigation(currentRoute);
-                    }
-
-                    @Override
-                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
-                        Log.e("navigation", "Error: " + throwable.getMessage());
-                    }
-                });
-    }
-    private void startNavigation(DirectionsRoute directionsRoute) {
-        NavigationLauncherOptions.Builder navOptions = NavigationLauncherOptions.builder()
-                        .directionsRoute(directionsRoute)
-                        .enableOffRouteDetection(false)
-                        .directionsProfile(DirectionsCriteria.PROFILE_WALKING);
-
-        NavigationLauncher.startNavigation(MainActivity.this, navOptions.build());
-        navigation.addNavigationEventListener(new NavigationEventListener() {
-            @Override
-            public void onRunning(boolean running) {
-                if (!running){
-                  //  navigationMapRoute.removeRoute();
-                }
-            }
-        });
-    }
-
-
-    public void Profile(){
-        Intent i = new Intent(MainActivity.this, ShowProf.class);
-        startActivity(i);
-    }
-    public void Wallet(){
-        Intent i = new Intent(MainActivity.this, WalletActivity.class);
-        startActivity(i);
-    }
-    private void Friends() {
-        Intent i = new Intent(MainActivity.this, FriendsActivity.class);
-        startActivity(i);
-    }
-    private void Bank() {
-        Intent i = new Intent(MainActivity.this, BankActivity.class);
-        startActivity(i);
-    }
     @Override
     public void onExplanationNeeded(List<String> permissionsToExplain) {
     }
 
+    /**
+     * If location is granted enable Location
+     * @param granted
+     */
     @Override
     public void onPermissionResult(boolean granted) {
         if (granted) {
@@ -566,6 +444,251 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             locationLayerPlugin.onStart();
         }
     }
+    /**
+     * This function sets the focus of the map on a specific location
+     * @param location
+     */
+    private void setCameraPosition(Location location){
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(),location.getLongitude()),14.00));
+    }
+
+    /**
+     * If the map is focused on the user's location, this function will make the map to focus on central campus.
+     * If the map is focused on central campus, this function will make the map to focus on the user's location.
+     * @param view
+     */
+    public void centreMap(View view){
+        Log.i("button","clicked");
+        centremapbtn=(Button) findViewById(R.id.centremap);
+        if (campus==false){
+            campus=true; //whenever campus==true, then the map is focused on central campus
+            final Location campuslocation = new Location("central campus");
+            campuslocation.setLatitude(55.943877);
+            campuslocation.setLongitude(-3.187479);
+            setCameraPosition(campuslocation);
+            centremapbtn.setText("MY LOCATION");
+        }else{
+            campus=false;//otherwise, then the map is focused on the user's location
+            setCameraPosition(locationOrigin);
+           centremapbtn.setText("CENTRAL CAMPUS");
+        }
+    }
+
+    /**
+     * This function is called when the user's location change
+     * @param location
+     */
+    @Override
+    public void onLocationChanged(Location location) {
+        if(location!=null){
+            locationOrigin=location;
+            setCameraPosition(locationOrigin); //was location before
+        }
+    }
+
+    /**
+     * This functions returns the distance of the coin which is closest to the user
+     * @return
+     */
+    public Double getClosestCoin() {
+        Double minimumDist=0.0;
+        if (markers.size() > 0) {
+            //for the first coin
+            //get its latlong coordinates
+            //get the user's location
+            Location userLocation = locationOrigin;
+            float[] result = new float[1];
+            LatLng coin = markers.get(0).getLatLng();
+            //this function sets result to the distance between that coin and the user in metres
+            Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                    coin.getLatitude(), coin.getLongitude(), result);
+            minimumDist = (double) result[0];
+
+            for (int x = 1; x < markers.size(); x++) {
+                //do the same for the rest of the coins and always compare
+                //to check which one has the minimum distance
+                coin = markers.get(x).getLatLng();
+                Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                        coin.getLatitude(), coin.getLongitude(), result);
+                Double dist = (double) result[0];
+                if (dist < minimumDist) {
+                    minimumDist = dist;
+                    closestcoin = markers.get(x);
+                }
+            }
+
+            }
+        return minimumDist;
+    }
+
+    /**
+     * This function checks if the user is 25 metres away from a coin
+     * If yes, the user can collect it
+     * @param view
+     */
+    public void CheckIfClosetoACoin(View view) {
+        Double minimumDist=getClosestCoin();
+            //if the user is in the range away from a coin a pop up will allow him/her to collect it
+            if (minimumDist <= 2500 && closestcoin.getCurrency()!=null) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                // Get the layout inflater
+                LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+                View view2= inflater.inflate(R.layout.popup2, null);
+                TextView title =view2.findViewById(R.id.title);
+                title.setText("Do you want to collect it?");
+                TextView info =view2.findViewById(R.id.info);
+                String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
+                info.setText(text);
+                builder.setView(view2)
+                        // Add action buttons
+                        .setPositiveButton("Yeah!", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                //add coin in wallet
+                                addCoin();
+                            }
+                        }).setNegativeButton("Nah", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        // Do nothing.
+                    }
+                }).show();
+            }else{
+                //if the user is not close
+                Toast.makeText(MainActivity.this,"Get closer!",Toast.LENGTH_SHORT).show();
+            }
+    }
+
+    /**
+     * If all requirements are met,this function add a specific coin in the user's wallet
+     */
+    public void addCoin(){
+        Toast.makeText(MainActivity.this,"New Coin Added", Toast.LENGTH_SHORT).show();
+        closestcoin.addInWallet();
+        markers.remove(closestcoin);
+        removeMarker(closestcoin.getMarker());
+    }
+
+    /**
+     * This function starts a navigation to the coin closest to the user.
+     * @param view
+     */
+    public void navigateToClosestCoin(View view){
+        Double mindist=getClosestCoin();
+        while(closestcoin==null) {
+        }
+        LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+        View view3 = inflater.inflate(R.layout.popup2, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        TextView title = view3.findViewById(R.id.title);
+        title.setText("Closest Coin Found:");
+        TextView info =view3.findViewById(R.id.info);
+        String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
+        info.setText(text);
+        builder.setView(view3)
+                // Add action buttons
+                .setPositiveButton("Start Navigation", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        Log.i("Navigation","Starts");
+                        Point destination = Point.fromLngLat(closestcoin.getLatLng().getLongitude(), closestcoin.getLatLng().getLatitude());
+                        getRoute(destination);
+                    }
+                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                // Do nothing.
+            }
+        }).show();
+    }
+
+    /**
+     * This function finds the quickest route to the destination point
+     * @param dest
+     */
+    private void getRoute(Point dest){
+        //get user's location
+        Point origin = Point.fromLngLat(locationOrigin.getLongitude(),locationOrigin.getLatitude());
+        Point destination=dest;
+        //build the route
+        NavigationRoute.builder(this)
+                .accessToken(Mapbox.getAccessToken())
+                .origin(origin)
+                .destination(destination)
+                .build()
+                .getRoute(new Callback<DirectionsResponse>() {
+                    @Override
+                    public void onResponse(Call<DirectionsResponse> call, Response<DirectionsResponse> response) {
+                        // You can get the generic HTTP info about the response
+                        Log.d("Navigation", "Response code: " + response.code());
+                        if (response.body() == null) {
+                            Log.e("Navigation", "No routes found, make sure you set the right user and access token.");
+                            return;
+                        } else if (response.body().routes().size() < 1) {
+                            Log.e("Navigation", "No routes found");
+                            return;
+                        }
+
+                        DirectionsRoute currentRoute = response.body().routes().get(0);
+                        //start the navigation
+                        startNavigation(currentRoute);
+                    }
+
+                    @Override
+                    public void onFailure(Call<DirectionsResponse> call, Throwable throwable) {
+                        Log.e("Navigation", "Error: " + throwable.getMessage());
+                    }
+                });
+    }
+
+    /**
+     * This function starts the navigation
+     * @param directionsRoute Directions to be used
+     */
+    private void startNavigation(DirectionsRoute directionsRoute) {
+        NavigationLauncherOptions.Builder navOptions = NavigationLauncherOptions.builder()
+                        .directionsRoute(directionsRoute)
+                        .enableOffRouteDetection(false)
+                        //by walking
+                        .directionsProfile(DirectionsCriteria.PROFILE_WALKING);
+
+        NavigationLauncher.startNavigation(MainActivity.this, navOptions.build());
+        navigation.addNavigationEventListener(new NavigationEventListener() {
+            @Override
+            public void onRunning(boolean running) {
+                if (!running){
+                }
+            }
+        });
+    }
+
+    /**
+     * Starts the Profile Activity.
+     */
+    public void Profile(){
+        Intent i = new Intent(MainActivity.this, ShowProf.class);
+        startActivity(i);
+    }
+
+    /**
+     * Starts the Wallet Activity.
+     */
+    public void Wallet(){
+        Intent i = new Intent(MainActivity.this, WalletActivity.class);
+        startActivity(i);
+    }
+
+    /**
+     * Starts the Friends Activity.
+     */
+    private void Friends() {
+        Intent i = new Intent(MainActivity.this, FriendsActivity.class);
+        startActivity(i);
+    }
+
+    /**
+     * Starts the Bank Activity.
+     */
+    private void Bank() {
+        Intent i = new Intent(MainActivity.this, BankActivity.class);
+        startActivity(i);
+    }
 
     @Override
     public void onResume() {
@@ -586,7 +709,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         if (locationLayerPlugin != null) {
             locationLayerPlugin.onStart();
         }
-      //  FirebaseAuth.getInstance().signOut();
     }
 
     @Override
@@ -613,4 +735,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapView.onSaveInstanceState(outState);
     }
 
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+            simpleStepDetector.updateAccel(
+                    event.timestamp, event.values[0], event.values[1], event.values[2]);
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+    /**
+     * Updates the step counter.
+     * @param timeNs
+     */
+    @Override
+    public void step(long timeNs) {
+        numSteps++;
+        TextView TvSteps= (TextView)findViewById(R.id.txt_steps);
+        TvSteps.setText(TEXT_NUM_STEPS + numSteps+" ");
+    }
 }

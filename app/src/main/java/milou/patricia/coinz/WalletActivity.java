@@ -35,6 +35,7 @@ import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
 import java.math.RoundingMode;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -103,7 +104,7 @@ public class WalletActivity extends AppCompatActivity {
                         if(task.isSuccessful()){
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 SimpleDateFormat df=new SimpleDateFormat("dd/MM/yyyy");
-                                String d=df.format(new Date(document.getLong("Deposited Date")));
+                                String d=df.format(document.getDate("Deposited Date"));
                                 String today=df.format(date);
                                 if(today.equals(d)){
                                     coinsdepositedtoday++;
@@ -372,7 +373,14 @@ public class WalletActivity extends AppCompatActivity {
                     Map<String, Object> coin = new HashMap<String, Object>();
                     coin.put("Currency", "GOLD");
                     coin.put("Value", newval);
-                    coin.put("Deposited Date", date.getTime());
+                    DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy");
+                    Date dateWithnoTime=new Date();
+                    try {
+                        dateWithnoTime = formatter.parse(formatter.format(date));
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
+                    coin.put("Deposited Date",dateWithnoTime);
                     db.collection("Users").document(user.getEmail()).collection("Bank").document(document.getId()).set(coin)
                             .addOnCompleteListener(new OnCompleteListener<Void>() {
                                 @Override

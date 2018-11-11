@@ -35,20 +35,24 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EditProfile extends AppCompatActivity {
+    //Firebase objects
+    private FirebaseAuth mAuth;
+    private StorageReference mStorageRef;
+    private FirebaseUser user;
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    //other
     private ImageView image;
     private Bitmap mBitmap;
     private EditText nameET,numberET,dobET;
     private TextView emaillbl;
     private String name,email,number,dob;
     private ProgressBar pgsBar;
-    private FirebaseAuth mAuth;
-    private StorageReference mStorageRef;
-    private FirebaseUser user;
-    private FirebaseFirestore db = FirebaseFirestore.getInstance();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_profile);
+        //get current user
         mAuth=FirebaseAuth.getInstance();
         mStorageRef = FirebaseStorage.getInstance().getReference();
         user= mAuth.getCurrentUser();
@@ -57,7 +61,9 @@ public class EditProfile extends AppCompatActivity {
         emaillbl =findViewById(R.id.emailval);
         numberET =findViewById(R.id.numberval);
         dobET =findViewById(R.id.dobval);
+        //get user's image
         getImage();
+        //get user's details
         getUser();
     }
 
@@ -85,6 +91,9 @@ public class EditProfile extends AppCompatActivity {
         });
     }
 
+    /**
+     * This function get the user's image stored in Firebase
+     */
     public void getImage() {
         StorageReference profRef = mStorageRef.child("images").child(user.getEmail()).child("profile.jpg");
         final long ONE_MEGABYTE = 1024 * 1024 *5;
@@ -92,34 +101,45 @@ public class EditProfile extends AppCompatActivity {
             @Override
             public void onSuccess(byte[] bytes) {
                 Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                //load image in Imageview
                 image.setImageBitmap(bmp);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception exception) {
+                Log.i("Photo","Failed to load",exception);
             }
         });
         pgsBar = (ProgressBar)findViewById(R.id.progressBar);
         pgsBar.setVisibility(View.GONE);
 
     }
+
+    /**
+     * This function saves the updated information of the User in the database
+     * @param view
+     */
     public void SaveUser(View view) {
+        //get updated information
         name=nameET.getText().toString();
         email=user.getEmail();
         number=numberET.getText().toString();
         dob=dobET.getText().toString();
+        //create a new map object
         Map<String, Object> user = new HashMap<>();
         user.put("Full Name", name);
         user.put("Telephone Number", number);
         user.put("Date of Birth", dob);
+        //update user
         db.collection("Users").document(email).collection("Info").document(email)
                 .set(user)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d("user", "DocumentSnapshot successfully written!");
+                        Log.d("User", "DocumentSnapshot successfully updated.");
                         Toast.makeText(EditProfile.this, "Information Saved", Toast.LENGTH_SHORT).show();
                         Intent i = new Intent(EditProfile.this, ShowProf.class);
+                        //go back to the showProf Activity
                         startActivity(i);
                         finish();
                     }
@@ -127,21 +147,32 @@ public class EditProfile extends AppCompatActivity {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w("user", "Error writing document", e);
+                        Log.w("User", "Error updating document", e);
                     }
                 });
     }
+
+    /**
+     * This function sends a password reset email to the user's email address
+     * @param view
+     */
     public void forgotPassword(View view){
         mAuth.sendPasswordResetEmail(user.getEmail());
         Toast.makeText(EditProfile.this, "Check your inbox for a password reset email", Toast.LENGTH_SHORT).show();
 
     }
+
+    /**
+     * This function allows the user to select a new profile and update it in Firebase.
+     * @param view
+     */
     public void uploadPhoto(View view){
         Intent photoPickerIntent = new Intent(Intent.ACTION_GET_CONTENT);
         photoPickerIntent.setType("image/*");
         startActivityForResult(photoPickerIntent, 1);
 
     }
+    //once a photo has been selected
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -158,6 +189,7 @@ public class EditProfile extends AppCompatActivity {
                 e.printStackTrace();
             }
             Uri file =chosenImageUri;
+            //update Firebase
             StorageReference imageRef = mStorageRef.child("images/"+user.getEmail()+"/profile.jpg");
 
             imageRef.putFile(file)
@@ -168,12 +200,14 @@ public class EditProfile extends AppCompatActivity {
                             Uri downloadUrl = taskSnapshot.getUploadSessionUri();
                             image.setImageBitmap(mBitmap);
                             Toast.makeText(EditProfile.this, "Uploaded", Toast.LENGTH_SHORT).show();
+                            Log.i("User's Photo","Uploaded");
                         }
                     })
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
                         public void onFailure(@NonNull Exception exception) {
                             Toast.makeText(EditProfile.this, "Failed,try again.", Toast.LENGTH_SHORT).show();
+                            Log.i("User's Photo","Not Uploaded",exception);
                         }
                     });
 

@@ -56,6 +56,9 @@ public class DownloadFileTask extends AsyncTask<String,Void, String> {
     protected void onPostExecute(String result){
         super.onPostExecute(result);
         MainActivity activity = activityReference.get();
+        //once downloading is complete sent the reuslt to the function
+        //"processFinish" at Main Activity
+
         activity.processFinish(result);
 
     }
