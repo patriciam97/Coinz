@@ -144,12 +144,22 @@
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="28dp"
-        android:layout_height="26dp"
+        android:layout_width="21dp"
+        android:layout_height="23dp"
         android:layout_alignParentEnd="true"
         android:layout_alignTop="@+id/orderSpinner"
+        android:layout_marginEnd="11dp"
         android:background="@android:color/transparent"
         android:onClick="readSpinner"
         android:scaleType="fitCenter"
         app:srcCompat="@drawable/arrow" />
+
+    <TextView
+        android:id="@+id/deposits"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_below="@+id/rates"
+        android:text="Daily Deposits Made:"
+        android:textAlignment="center" />
 </RelativeLayout>

@@ -1,18 +1,10 @@
 package milou.patricia.coinz;
 
-import android.content.Intent;
-import android.support.annotation.NonNull;
-import android.util.Log;
-import android.widget.Toast;
+import android.annotation.SuppressLint;
 
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
-import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 
@@ -20,30 +12,27 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import timber.log.Timber;
 
 public class Coin {
-    //Firebase objects
-    private FirebaseAuth mAuth;
-    private StorageReference mStorageRef;
     private FirebaseUser user;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     //coin's properties
-    private String id,currency,markerSymbol,markerColour;
+    private String id,currency;
     private double value;
     private LatLng latlng;
     private Marker marker;
-    public Coin() {
+    Coin(){
 
     }
-    public Coin(String id, String value, String currency, String mS,String mC,String lat, String lng) {
+    Coin(String id, String value, String currency, String lat, String lng) {
         this.id=id;
         this.value=Double.parseDouble(value);
         this.currency=currency;
-        this.markerSymbol=mS;
-        this.markerColour=mC;
         this.latlng= new LatLng(Double.parseDouble(lat),Double.parseDouble(lng));
-        mAuth= FirebaseAuth.getInstance();
-        mStorageRef = FirebaseStorage.getInstance().getReference();
+        FirebaseAuth mAuth = FirebaseAuth.getInstance();
         user= mAuth.getCurrentUser();
     }
 
@@ -61,29 +50,19 @@ public class Coin {
      */
     public void addInWallet(){
         Calendar in = Calendar.getInstance();
-        SimpleDateFormat dformat = new SimpleDateFormat("dd/MM/yy");
+        @SuppressLint("SimpleDateFormat") SimpleDateFormat dformat = new SimpleDateFormat("dd/MM/yy");
         Map<String, Object> coin = new HashMap<>();
         coin.put("Currency",currency);
         coin.put("Value", value);
-        coin.put("Collected Date",dformat.format(in.getTime()).toString());
+        coin.put("Collected Date", dformat.format(in.getTime()));
         //set the expiry date to be 2 days later
         in.add(Calendar.DAY_OF_YEAR, 2);
-        coin.put("Expiry Date",dformat.format(in.getTime()).toString());
+        coin.put("Expiry Date", dformat.format(in.getTime()));
 
-        db.collection("Users").document(user.getEmail()).collection("Coins").document(id)
+        db.collection("Users").document(Objects.requireNonNull(user.getEmail())).collection("Coins").document(id)
                 .set(coin)
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d("Coin", "Added In Wallet");
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w("Coin", "Not Added in Wallet", e);
-                    }
-                });
+                .addOnSuccessListener(aVoid -> Timber.d("Added In Wallet"))
+                .addOnFailureListener(e -> Timber.tag("Coin").w(e, "Not Added in Wallet"));
     }
     //getters
     public String getId(){
@@ -97,12 +76,6 @@ public class Coin {
     }
     public LatLng getLatLng(){
         return latlng;
-    }
-    public String getMarkerSymbol(){
-        return markerSymbol;
-    }
-    public String getMarkerColour(){
-        return markerColour;
     }
     public Marker getMarker(){
         return marker;

@@ -18,4 +18,9 @@
     <string name="prof_nav">Your Profile</string>
     <string name="tab_1">Profile</string>
     <string name="tab_2">Wallet</string>
+    <string name="tab_3">Friends</string>
+    <string name="tab_4">Bank</string>
+    <string name="loc">MY LOCATION</string>
+    <string name="campus">CENTRAL CAMPUS</string>
+    <string name="deposits">Daily Deposits Made:</string>
 </resources>
