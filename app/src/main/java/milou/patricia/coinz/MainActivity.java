@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         //set up navigation
         editNavigationBars();
-        navigation = new MapboxNavigation(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pvOTF6dm1iMGZsZTNxb3g1MDU0ZGtsYiJ9.R6jgvI9ZH7mUIIxwzJjW_Q");
+        navigation = new MapboxNavigation(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pqaWl3aHFqMWMyeDNsbXh4MndnY3hzMiJ9.Fqn_9bmuScR4IqUrUbP6lA");
         //step sensor
         SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         assert sensorManager != null;
@@ -507,7 +507,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void CheckIfClosetoACoin(View view) {
         Double minimumDist=getClosestCoin();
             //if the user is in the range away from a coin a pop up will allow him/her to collect it
-            if (minimumDist <= 2500 && closestcoin.getCurrency()!=null) {
+            if (minimumDist <= 25 && closestcoin.getCurrency()!=null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 // Get the layout inflater
                 LayoutInflater inflater = MainActivity.this.getLayoutInflater();

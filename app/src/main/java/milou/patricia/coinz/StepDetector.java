@@ -5,7 +5,7 @@ public class StepDetector {
     private static final int ACCEL_RING_SIZE = 50;
     private static final int VEL_RING_SIZE = 10;
 
-    // change this threshold according to your sensitivity preferences
+    // this threshold affects the sensitivity preferences
     private static final float STEP_THRESHOLD = 20f;
 
     private static final int STEP_DELAY_NS = 250000000;
@@ -25,7 +25,9 @@ public class StepDetector {
         this.listener = listener;
     }
 
-
+    /**
+     * This function accept updates from accelerometer sensor and deploys the filter to detect if a step has been covered by the user.
+     */
     public void updateAccel(long timeNs, float x, float y, float z) {
         float[] currentAccel = new float[3];
         currentAccel[0] = x;

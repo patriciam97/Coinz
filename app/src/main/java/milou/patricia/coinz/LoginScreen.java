@@ -1,5 +1,6 @@
 package milou.patricia.coinz;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -30,9 +31,11 @@ import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
+import timber.log.Timber;
+
 
 public class LoginScreen extends AppCompatActivity {
-
+    //firebase objects
     private FirebaseAuth mAuth;
     private EditText emailInput,passwordInput;
     private String email,password;
@@ -44,7 +47,7 @@ public class LoginScreen extends AppCompatActivity {
     private static final String PREF_EMAIL = "Username";
     private static final String PREF_PASSWORD = "Password";
     private static final String PREF_SAVE = "Save";
-    private String EmailValue,PasswordValue,SavedValue;
+    protected String PasswordValue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,37 +57,48 @@ public class LoginScreen extends AppCompatActivity {
         eye=findViewById(R.id.eye);
         emailInput=findViewById(R.id.emailInput);
         passwordInput=findViewById(R.id.passwordInput);
-        checkBox= (CheckBox)findViewById(R.id.rememberme);
+        checkBox= findViewById(R.id.rememberme);
         checkBox.setChecked(true); //by default set it to true
 
     }
+
+    /**
+     * This function controls if the passord will be visible or now.
+     * @param view Current View
+     */
     public void passwordbtn (View view){
-        if(see==true) {//normal text form
+        if(see) { //normal text form
             hidepassword();
-        }else{
+        }else{ //if password is hidden
             showpassword();
         }
     }
+    /*
+    This function makes the password text visible.
+     */
     public void showpassword(){
-        Log.v("see before", "" + see);
-        //passwordInput.setInputType(InputType.TYPE_TEXT_VARIATION_NORMAL);
+        //change it
         passwordInput.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
         see=true;
         int imageResource = getResources().getIdentifier("@drawable/eye", null, getPackageName());
         Drawable res = getResources().getDrawable(imageResource);
         eye.setImageDrawable(res);
-        Log.v("see after", "" + see);
+        Timber.tag("Password Edit Text").v("Changed");
     }
+
+    /**
+     * This function makes the password text back to hidden.
+     */
     public void hidepassword(){
-        Log.v("see before", "" + see);
-       // passwordInput.setInputType(InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        //change it
         passwordInput.setTransformationMethod(PasswordTransformationMethod.getInstance());
         see=false;
         int imageResource = getResources().getIdentifier("@drawable/mascara", null, getPackageName());
         Drawable res = getResources().getDrawable(imageResource);
         eye.setImageDrawable(res);
-        Log.v("see after", "" + see);
+        Timber.tag("Password Edit Text").v("Changed");
     }
+
     @Override
     public void onStart() {
         super.onStart();
@@ -95,75 +109,98 @@ public class LoginScreen extends AppCompatActivity {
     private void updateUI(FirebaseUser currentUser) {
     }
 
+    /**
+     * This function starts the Register Acitivy where someone can create an account.
+     * @param view Current View
+     */
     public void registerUser (View view){
         Intent i = new Intent(LoginScreen.this, RegisterActivity.class);
         startActivity(i);
     }
+
+    /**
+     * This function logins the user.
+     * @param view Current View
+     */
     public void loginUser (View view){
+        //get email and password input from the user
         email=emailInput.getText().toString();
         password=passwordInput.getText().toString();
         mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Toast.makeText(LoginScreen.this, "User Login Successful", Toast.LENGTH_SHORT).show();
-                            user = mAuth.getCurrentUser();
-                            updateUI(user);
-                            Intent i = new Intent(LoginScreen.this, MainActivity.class);
-                            startActivity(i);
-                            finish();
+                .addOnCompleteListener(this, task -> {
+                    if (task.isSuccessful()) {
+                        // Sign in success, update UI with the signed-in user's information
+                        Toast.makeText(LoginScreen.this, "User Login Successful", Toast.LENGTH_SHORT).show();
+                        user = mAuth.getCurrentUser();
+                        updateUI(user);
+                        Intent i = new Intent(LoginScreen.this, MainActivity.class);
+                        startActivity(i);
+                        finish();
+                        Timber.i("Success");
 
-                        } else {
-                            // If sign in fails, display a message to the user.
-                            updateUI(null);
-                            Toast.makeText(LoginScreen.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
-                        }
+                    } else {
+                        // If sign in fails, display a message to the user.
+                        updateUI(null);
+                        Toast.makeText(LoginScreen.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
+                        Timber.i("Failure");
                     }
-
-                    });
+                });
     }
 
+    /**
+     * This function is run if the user had forgot his password.
+     * In this case, a dialog will inflate where the user has to type his email.
+     * A reset password email is then sent to that email address.
+     * @param view Current View
+     */
     public void forgotPassword(View view){
         AlertDialog.Builder builder = new AlertDialog.Builder(LoginScreen.this);
         // Get the layout inflater
         LayoutInflater inflater = LoginScreen.this.getLayoutInflater();
-        View view2= inflater.inflate(R.layout.popup, null);
+        @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup, null);
         final EditText input =view2.findViewById(R.id.editTextDialogUserInput);
         builder.setView(view2)
                 // Add action buttons
-                .setPositiveButton("Continue", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int whichButton) {
-                        Editable value =input.getText();
-                        mAuth.sendPasswordResetEmail(value.toString());
-                        Toast.makeText(LoginScreen.this, "Check your inbox for a password reset email", Toast.LENGTH_SHORT).show();
-                    }
-                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Do nothing.
-            }
-        }).show();
+                .setPositiveButton("Continue", (dialog, whichButton) -> {
+                    //get email address
+                    Editable value =input.getText();
+                    //send email
+                    mAuth.sendPasswordResetEmail(value.toString());
+                    Toast.makeText(LoginScreen.this, "Check your inbox for a password reset email", Toast.LENGTH_SHORT).show();
+                    Timber.i("Passrod Reset Email Send.");
+                }).setNegativeButton("Cancel", (dialog, whichButton) -> {
+                    // Do nothing.
+                }).show();
     }
 
+    /**
+     * The following information is stored in the application.
+     * @param email Email of user
+     * @param password Password of user
+     * @param save Boolean value which indicates if the application should remember his credentials.
+     */
     private void savePreferences(String email, String password, Boolean save) {
         SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = settings.edit();
 
         editor.putString(PREF_EMAIL, email);
         editor.putString(PREF_PASSWORD, password);
-        editor.putString(PREF_SAVE,save.toString());
-        editor.commit();
+        editor.putString(PREF_SAVE, save.toString());
+        editor.apply();
     }
+
+    /**
+     * This functions loads the above variables.
+     */
     private void loadPreferences() {
 
         SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
-        EmailValue = settings.getString(PREF_EMAIL,"");
+        String emailValue = settings.getString(PREF_EMAIL, "");
         PasswordValue = settings.getString(PREF_PASSWORD,"");
-        SavedValue = settings.getString(PREF_SAVE,"");
-        emailInput.setText(EmailValue);
+        String savedValue = settings.getString(PREF_SAVE,"false");
+        emailInput.setText(emailValue);
         passwordInput.setText(PasswordValue);
-        if(SavedValue=="true"){
+        if(savedValue=="true"){
             checkBox.setChecked(true);
         }else{
             checkBox.setChecked(false);

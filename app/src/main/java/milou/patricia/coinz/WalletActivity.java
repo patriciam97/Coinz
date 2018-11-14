@@ -60,7 +60,7 @@ public class WalletActivity extends AppCompatActivity {
         //date=dformat.format(in.getTime());
         date=in.getTime();
         //remove expired coins
-        removeExpiredCoins ();
+        removeExpiredCoins();
         //checkforgifts
         checkgifts();
         //Show today's exchange rates
@@ -333,10 +333,10 @@ public class WalletActivity extends AppCompatActivity {
                 .addOnFailureListener(e -> Timber.tag("DeleteCoin").w(e, "Error deleting document")));
         //if the user selects to send the coin to a friend
         TextView send =view2.findViewById(R.id.send);
-        send.setOnClickListener(v -> {
+        send.setOnClickListener((View v) -> {
             LayoutInflater inflater1 = WalletActivity.this.getLayoutInflater();
             @SuppressLint("InflateParams") View view3= inflater1.inflate(R.layout.friendspopup, null);
-            Dialog dialog2 = new AlertDialog.Builder(WalletActivity.this).setView(view3).show();
+            new AlertDialog.Builder(WalletActivity.this).setView(view3).show();
             //sending the coin is included in the ShowFriends class
             //show list of friends and once someone is selected the coin will be sent.
             ShowFriends sf= new ShowFriends(view3, document.getId());

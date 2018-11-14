@@ -31,7 +31,7 @@ public class FriendsActivity extends AppCompatActivity {
     private FirebaseUser user;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private DocumentSnapshot friendrequest;
-
+    private ShowFriends sf;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +48,7 @@ public class FriendsActivity extends AppCompatActivity {
     }
 
     public void showFriends() {
-        ShowFriends sf= new ShowFriends(v,null);
+        sf= new ShowFriends(v,null);
         sf.showTable();
     }
 
@@ -69,7 +69,7 @@ public class FriendsActivity extends AppCompatActivity {
                 .setPositiveButton("Send Friend Request", (dialog12, whichButton) -> {
                     String value = input.getText().toString();
                     //check that the email address entered is not the same as the user's email address(Adding himself)
-                    if (!user.getEmail().equals(value)) {
+                    if (!user.getEmail().equals(value)&& !sf.friends.contains(value)) {
                         db.collection("Users").document(value).collection("Info").document(value)
                                 .get()
                                 .addOnCompleteListener(task -> {
@@ -88,7 +88,11 @@ public class FriendsActivity extends AppCompatActivity {
                                     }
                                 });
                     }else{
-                        Toast.makeText(FriendsActivity.this,"You cannot add yourself.",Toast.LENGTH_SHORT).show();
+                        if(user.getEmail().equals(value)) {
+                            Toast.makeText(FriendsActivity.this, "You cannot add yourself.", Toast.LENGTH_SHORT).show();
+                        }else if (sf.friends.contains(value)){
+                            Toast.makeText(FriendsActivity.this, "You are already friends with "+value, Toast.LENGTH_SHORT).show();
+                        }
                     }
                 }).setNegativeButton("Cancel", (dialog1, whichButton) -> {
                         // Do nothing.
