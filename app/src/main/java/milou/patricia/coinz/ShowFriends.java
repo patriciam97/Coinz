@@ -2,6 +2,8 @@ package milou.patricia.coinz;
 
 import android.annotation.SuppressLint;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
 import android.support.v7.app.AlertDialog;
 import android.view.Gravity;
@@ -132,6 +134,10 @@ public class ShowFriends {
                     addcoin(toemail,currency,val,dateC,dateE);
                     //delete this document
                     doc.getReference().delete();
+                    ((Activity)v.getContext()).finish();
+                    Intent i = new Intent(v.getContext(), WalletActivity.class);
+                    ((Activity)v.getContext()).startActivity(i);
+
 
                 });
 

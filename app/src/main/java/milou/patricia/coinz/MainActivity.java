@@ -75,8 +75,12 @@ import retrofit2.Response;
 import timber.log.Timber;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
+
+import static java.lang.Math.toIntExact;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,LocationEngineListener,PermissionsListener,AsyncResponse,SensorEventListener, StepListener{
     //firebase objects
@@ -98,13 +102,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     //objects that implement step detector
     private StepDetector simpleStepDetector;
     private static final String TEXT_NUM_STEPS = "Number of Steps: ";
-    private int numSteps;
+    private int totaldailysteps=0;
+    private int goal;
+    private boolean goalreached=false;
     //others
     private Boolean campus=false;
     public static String shil,peny,dolr,quid;
     private ArrayList<Coin> markers= new ArrayList<Coin>();
     private Coin closestcoin = new Coin();
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -142,7 +147,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Sensor accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         simpleStepDetector = new StepDetector();
         simpleStepDetector.registerListener(this);
-        numSteps = 0;
+        getStepGoal();
+        getStepsfromEarlier();
         sensorManager.registerListener(MainActivity.this, accel, SensorManager.SENSOR_DELAY_FASTEST);
     }
 
@@ -406,6 +412,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } else {
             finish();
         }
+
     }
 
     @Override
@@ -507,7 +514,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void CheckIfClosetoACoin(View view) {
         Double minimumDist=getClosestCoin();
             //if the user is in the range away from a coin a pop up will allow him/her to collect it
-            if (minimumDist <= 25 && closestcoin.getCurrency()!=null) {
+            if (minimumDist <= 2500 && closestcoin.getCurrency()!=null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 // Get the layout inflater
                 LayoutInflater inflater = MainActivity.this.getLayoutInflater();
@@ -673,12 +680,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onPause() {
+        updateSteps();
         super.onPause();
         mapView.onPause();
     }
 
     @Override
     public void onStop() {
+        updateSteps();
         super.onStop();
         mapView.onStop();
         if (locationLayerPlugin != null) {
@@ -694,6 +703,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     protected void onDestroy() {
+        updateSteps();
         super.onDestroy();
         if(locationEngine!=null){
             locationEngine.deactivate();
@@ -702,6 +712,82 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         FirebaseAuth.getInstance().signOut();
         navigation.stopNavigation();
         navigation.onDestroy();
+    }
+
+    /**
+     * This function gets the goal stored in the firebase. If not(first time played) the goal is set to 250.
+     */
+    private void getStepGoal(){
+        //get goal
+        DocumentReference docRef = db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL");
+        docRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    if(document.getDouble("Goal")<=totaldailysteps){
+                        goal=(int) Math.round(document.getDouble("Goal")*2);
+                        goalreached=true;
+                    }
+                }else{
+                    //set goal to 250
+                    Map<String, Object> step = new HashMap<>();
+                    step.put("Goal",250);
+                    db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL")
+                            .set(step)
+                            .addOnSuccessListener(aVoid -> {
+                                Timber.d("DocumentSnapshot successfully updated.");
+                            })
+                            .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
+                    goal=250;
+                }
+            } else {
+                Timber.d(task.getException(), "get failed with ");
+            }
+        });
+    }
+
+    /**
+     * This function retrives the amount of steps from an earlier play.
+     */
+    private void getStepsfromEarlier(){
+        DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
+        Date date = new Date();
+        String date1=dateFormat.format(date);
+        //get sum of today's step if its not the first time played today
+        DocumentReference docRef = db.collection("Users").document(user.getEmail()).collection("Steps").document(date1);
+        docRef.get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                DocumentSnapshot document = task.getResult();
+                if (document.exists()) {
+                    Timber.d("DocumentSnapshot data: %s", document.getData());
+                    totaldailysteps=toIntExact(document.getLong("Steps"));
+                    TextView TvSteps= findViewById(R.id.txt_steps);
+                    TvSteps.setText(TEXT_NUM_STEPS + totaldailysteps);
+                }
+            } else {
+                Timber.d(task.getException(), "get failed with ");
+            }
+        });
+    }
+    /**
+     * This function updates the steps that the user took in Firebase.
+     */
+    private void updateSteps() {
+        DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
+        Date date = new Date();
+        String date1=dateFormat.format(date);
+        Map<String, Object> step = new HashMap<>();
+        step.put("Steps", totaldailysteps);
+        db.collection("Users").document(user.getEmail()).collection("Steps").document(date1)
+                .set(step)
+                .addOnSuccessListener(aVoid -> {
+                    Timber.d("DocumentSnapshot successfully updated.");
+                })
+                .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
+
+        if(goalreached){
+            Toast.makeText(MainActivity.this,"GOAL REACHED! New goal: "+goal,Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
@@ -730,8 +816,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @SuppressLint("SetTextI18n")
     @Override
     public void step(long timeNs) {
-        numSteps++;
+        totaldailysteps++;
         TextView TvSteps= findViewById(R.id.txt_steps);
-        TvSteps.setText(TEXT_NUM_STEPS + numSteps);
+        TvSteps.setText(TEXT_NUM_STEPS + totaldailysteps);
+        updateSteps();
     }
 }

@@ -99,7 +99,7 @@ public class BankActivity extends AppCompatActivity {
                                     //set entry date to that date on midnight so that plotting si more accurate
                                     Calendar entrydate = new GregorianCalendar();
                                     entrydate.setTime(prevday);
-                                    entrydate.set(Calendar.HOUR_OF_DAY, 0);
+                                    entrydate.set(Calendar.HOUR, 0);
                                     entrydate.set(Calendar.MINUTE, 0);
                                     entrydate.set(Calendar.SECOND, 0);
                                     entrydate.set(Calendar.MILLISECOND, 0);
@@ -120,12 +120,12 @@ public class BankActivity extends AppCompatActivity {
                             // entrydate.set(Calendar.HOUR,0);
                             entries.add(new Entry(entrydate.getTimeInMillis(), (float) sum));
                             Timber.i("Entries size: %s", entries.size());
-
+                            totaldeposits = totaldeposits + sum;
                             // Setting Data
                             xAxis.setLabelCount(entries.size());
                             Calendar cal1 = Calendar.getInstance();
                             cal1.setTime(new Date((long)entries.get(0).getX()));
-                            cal1.add(Calendar.DAY_OF_YEAR, -1);
+                            cal1.add(Calendar.DAY_OF_YEAR, 1);
                             Date previousDate = cal1.getTime();
                             xAxis.setAxisMinimum(previousDate.getTime());
                             cal1.setTime(new Date((long)entries.get(entries.size()-1).getX()));
@@ -135,6 +135,7 @@ public class BankActivity extends AppCompatActivity {
                             LineDataSet dataSet = new LineDataSet(entries, null);
                             chart.setDescription(null);
                             LineData data = new LineData(dataSet);
+                            dataSet.setLineWidth(3);
                             chart.setData(data);
                             chart.invalidate();
                             totaldep = findViewById(R.id.totaltxt);
