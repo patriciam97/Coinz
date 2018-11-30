@@ -9,7 +9,7 @@
     <RelativeLayout
         android:id="@+id/relativeLayout2"
         android:layout_width="411dp"
-        android:layout_height="603dp"
+        android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:background="@drawable/background"
@@ -23,7 +23,9 @@
             android:id="@+id/lbl"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="239dp"
             android:text="Password:"
             android:textSize="18sp" />
 
@@ -33,16 +35,25 @@
             android:layout_height="wrap_content"
             android:layout_alignParentTop="true"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="186dp"
+            android:layout_marginTop="243dp"
             android:text="Email:"
             android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/lbl3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="162dp"
+            android:text="Enter your email and password to register"
+            android:textSize="14sp" />
 
         <EditText
             android:id="@+id/emailInput"
             android:layout_width="241dp"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/lbl2"
-            android:layout_centerHorizontal="true"
+            android:layout_centerInParent="true"
             android:ems="10"
             android:inputType="textEmailAddress"
             android:textAlignment="center"
@@ -52,8 +63,9 @@
             android:id="@+id/passwordInput"
             android:layout_width="239dp"
             android:layout_height="43dp"
-            android:layout_below="@+id/lbl"
+            android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
+            android:layout_marginBottom="186dp"
             android:ems="10"
             android:inputType="textPassword"
             android:textAlignment="center" />

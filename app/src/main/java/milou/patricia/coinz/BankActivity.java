@@ -23,6 +23,9 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -89,7 +92,11 @@ public class BankActivity extends AppCompatActivity {
                             @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
                             Date prevday = task.getResult().getDocuments().get(0).getDate("Deposited Date");
                             double sum = 0;
-                            Date d=new Date();
+                            Date d= new Date();
+                            Date beg=task.getResult().getDocuments().get(0).getDate("Deposited Date");
+                            LocalDate beg1 = beg.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                            Date end=task.getResult().getDocuments().get(task.getResult().getDocuments().size()-1).getDate("Deposited Date");
+                            LocalDate end1 = end.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 d =document.getDate("Deposited Date");
                                 if (sdf.format(d).equals(sdf.format(prevday))) {
@@ -122,7 +129,9 @@ public class BankActivity extends AppCompatActivity {
                             Timber.i("Entries size: %s", entries.size());
                             totaldeposits = totaldeposits + sum;
                             // Setting Data
-                            xAxis.setLabelCount(entries.size());
+                            Period period = Period.between(beg1,end1);
+                            int diff = period.getDays();
+                            xAxis.setLabelCount(diff/3);
                             Calendar cal1 = Calendar.getInstance();
                             cal1.setTime(new Date((long)entries.get(0).getX()));
                             cal1.add(Calendar.DAY_OF_YEAR, 1);

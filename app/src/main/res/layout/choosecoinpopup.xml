@@ -12,28 +12,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="@font/roboto_light"
-        android:padding="5dp"
-        android:paddingBottom="15dp"
-        android:text="Select your friend"
+        android:text="Choose Currency"
         android:textAlignment="center"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
-    <ScrollView
+    <Spinner
+        android:id="@+id/spinner"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:entries="@array/coinsspinner"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TableLayout
-                android:id="@+id/table"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-            </TableLayout>
-        </LinearLayout>
-    </ScrollView>
+    <Button
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="43dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bluebutton"
+        android:text="Search" />
 
 </LinearLayout>

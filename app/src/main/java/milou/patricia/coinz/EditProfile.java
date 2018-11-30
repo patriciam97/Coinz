@@ -119,7 +119,7 @@ public class EditProfile extends AppCompatActivity {
                 .addOnSuccessListener(aVoid -> {
                     Timber.d("DocumentSnapshot successfully updated.");
                     Toast.makeText(EditProfile.this, "Information Saved", Toast.LENGTH_SHORT).show();
-                    Intent i = new Intent(EditProfile.this, ShowProf.class);
+                    Intent i = new Intent(EditProfile.this, MainActivity.class);
                     //go back to the showProf Activity
                     startActivity(i);
                     finish();

@@ -4,11 +4,14 @@ import android.annotation.SuppressLint;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.support.v7.app.AlertDialog;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -19,6 +22,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +32,7 @@ import java.util.Map;
 import timber.log.Timber;
 
 public class ShowFriends {
+    private final StorageReference mStorageRef;
     private FirebaseUser user;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     public ArrayList<String> friends= new ArrayList<>();
@@ -40,6 +46,7 @@ public class ShowFriends {
      */
     ShowFriends(View view2, String coinid){
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
+        mStorageRef = FirebaseStorage.getInstance().getReference();
         user= mAuth.getCurrentUser();
         this.v=view2;
         this.coinid=coinid;
@@ -206,12 +213,21 @@ public class ShowFriends {
         // Get the layout inflater
         LayoutInflater inflater = LayoutInflater.from(v.getContext());
         @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup2, null);
+        ImageView image= view2.findViewById(R.id.profile);
+        
+        StorageReference profRef = mStorageRef.child("images").child(email).child("profile.jpg");
+        final long ONE_MEGABYTE = 1024 * 1024 *5;
+        profRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(bytes -> {
+            Bitmap bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            //set the image at the image view
+            image.setImageBitmap(bmp);
+        }).addOnFailureListener(exception -> {
+        });
         TextView title=view2.findViewById(R.id.title);
-        title.setText(email);
+        title.setText(name);
         TextView info =view2.findViewById(R.id.info);
-        String text= "Full Name: "+name+"\nContact Number: "+number+"\nDate of Birth: "+dob;
+        String text= "Email: "+email+"\nContact Number: "+number+"\nDate of Birth: "+dob;
         info.setText(text);
-        info.setTextSize(18);
         builder.setView(view2).show();
     }
 }

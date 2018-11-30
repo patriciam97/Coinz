@@ -3,11 +3,18 @@ package milou.patricia.coinz;
 
 import android.annotation.SuppressLint;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -21,8 +28,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.Spinner;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -37,6 +49,10 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.api.directions.v5.DirectionsCriteria;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
@@ -97,7 +113,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private Bitmap[] IMarkers= new Bitmap[10];
     private IconFactory iconFactory;
-    private Icon icon ;
+    private Icon icon,icon2 ;
     private MapboxNavigation navigation;
     //objects that implement step detector
     private StepDetector simpleStepDetector;
@@ -106,10 +122,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private int goal;
     private boolean goalreached=false;
     //others
+    private static final String PREFS_NAME = "preferences";
+    private static final String PREF_MAP = "MapStyle";
+    private static final String PREF_STEP = "Step Counter";
     private Boolean campus=false;
     public static String shil,peny,dolr,quid;
     private ArrayList<Coin> markers= new ArrayList<Coin>();
     private Coin closestcoin = new Coin();
+    private int loc=10;
+    private TextView tvSteps;
+    private boolean stepenable=true;
+    private Bitmap Fbmp ;
+    private Double Flat,Flon;
+    private ArrayList<String> friends= new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,10 +163,21 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
             IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
         }
+        //getFriends();
         //set up navigation
         editNavigationBars();
         navigation = new MapboxNavigation(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pqaWl3aHFqMWMyeDNsbXh4MndnY3hzMiJ9.Fqn_9bmuScR4IqUrUbP6lA");
         //step sensor
+        tvSteps= findViewById(R.id.txt_steps);
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
+        String stepmode= settings.getString(PREF_STEP,"");
+        if (stepmode.equals("Enable")){
+            tvSteps.setVisibility(View.VISIBLE);
+            stepenable=true;
+        }else if (stepmode.equals("Disable")){
+            tvSteps.setVisibility(View.INVISIBLE);
+            stepenable=false;
+        }
         SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         assert sensorManager != null;
         Sensor accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
@@ -160,12 +196,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         AHBottomNavigationItem item2 = new AHBottomNavigationItem(R.string.tab_3, R.drawable.friends, R.color.color_tab_1);
         AHBottomNavigationItem item3 = new AHBottomNavigationItem(R.string.tab_2, R.drawable.wallet,R.color.color_tab_1);
         AHBottomNavigationItem item4 = new AHBottomNavigationItem(R.string.tab_4, R.drawable.piggybank,R.color.color_tab_1);
-
+        AHBottomNavigationItem item5 = new AHBottomNavigationItem(R.string.tab_5, R.drawable.settings,R.color.color_tab_1);
         // Add items
         bottomNavigation.addItem(item1);
         bottomNavigation.addItem(item2);
         bottomNavigation.addItem(item3);
         bottomNavigation.addItem(item4);
+        bottomNavigation.addItem(item5);
         // Change colors
         bottomNavigation.setAccentColor(Color.parseColor("#99d8d6"));
         bottomNavigation.setInactiveColor(Color.parseColor("#99d8d6"));
@@ -179,6 +216,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 Wallet();
             }else if(position==3){
                 Bank();
+            }else if(position==4){
+            Settings();
             }
             return true;
         });
@@ -243,11 +282,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                                    //if yes don't show it on the map
                                } else {
                                    //create the appropriate marker symbol
+                                   icon=null;
                                    icon = getNumIcon(markersymbol);
-                                   icon = getColourIcon(icon, markercolour);
+                                   while(icon==null){
+
+                                   }
+                                   icon2=null;
+                                   icon2 = getColourIcon(icon, markercolour);
+                                   while(icon2==null){
+
+                                   }
                                    Coin coin = new Coin(id, value, currency,lat, lng);
                                    //add that coin on the map
-                                   addMarker(coin, icon);
+                                   addMarker(coin, icon2);
                                }
                            } else {
                                Log.d("Doc", "get failed with ", task.getException());
@@ -341,6 +388,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
         map=mapboxMap;
+        SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
+        String styleValue = settings.getString(PREF_MAP, "");
+        if(styleValue.equals("Dark")){
+            map.setStyle("mapbox://styles/mapbox/dark-v9");
+        }else if(styleValue.equals("Light")){
+            map.setStyle("mapbox://styles/mapbox/streets-v9");
+        }
         enableLocation();
     }
 
@@ -368,27 +422,106 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * This function initializes the Location Engine
      */
     @SuppressWarnings("MissingPermission")
-    private void initializeLocationEngine(){
+    private void initializeLocationEngine() {
         LocationEngineProvider locationEngineProvider = new LocationEngineProvider(this);
         locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
         locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
         locationEngine.activate();
-
         Location lastLocation = locationEngine.getLastLocation();
+        Date date = new Date();
         if (lastLocation != null) {
             locationOrigin = lastLocation;
+            Map<String, Object> loc = new HashMap<>();
+            loc.put("Lat", lastLocation.getLatitude());
+            loc.put("Lon", lastLocation.getLongitude());
+            //loc.put("time", date.getTime());
+            //update user
+            db.collection("Users").document(user.getEmail()).collection("LastLoc").document(user.getEmail())
+                    .set(loc)
+                    .addOnSuccessListener(aVoid -> {
+                        Timber.i("Location updated in Firebase");
+                    })
+                    .addOnFailureListener(e -> Timber.i("Location not updated in Firebase"));
         } else {
             locationEngine.addLocationEngineListener(this);
         }
     }
+    public void getFriends(){
+        db.collection("Users").document(user.getEmail()).collection("Friends").get().addOnCompleteListener(task -> {
+            if (task.isSuccessful()) {
+                for (QueryDocumentSnapshot document : task.getResult()) {
+                    friends.add(document.getId().toString());
+                }
+                showFriends();
+            } else {
+                Timber.d(task.getException(), "get failed with ");
+            }
+        });
+    }
+    public void getFriendsProf(String friend,Double Flat,Double Flon){
+        StorageReference mStorageRef = FirebaseStorage.getInstance().getReference();
+        StorageReference profRef = mStorageRef.child("images").child(friend).child("profile.jpg");
+        final long ONE_MEGABYTE = 1024 * 1024 *5;
+        profRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(bytes -> {
+            Fbmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+            createfriendmarker(friend,Flat,Flon,Fbmp);
+        }).addOnFailureListener(exception ->  createfriendmarker(friend,Flat,Flon,null));
+    }
+    public Bitmap getCroppedBitmap(Bitmap bitmap) {
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
+                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(output);
 
-//    private void initializeLocationLayer(){
-//        locationLayerPlugin=new LocationLayerPlugin(mapView,map,locationEngine);
-//        locationLayerPlugin.setLocationLayerEnabled(true);
-//        locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
-//        locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
-//    }
+        final int color = 0xff424242;
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
 
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        paint.setColor(color);
+        // canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
+        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
+                bitmap.getWidth() / 2, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, rect, rect, paint);
+        //Bitmap _bmp = Bitmap.createScaledBitmap(output, 60, 60, false);
+        //return _bmp;
+        return output;
+    }
+    public void createfriendmarker(String email,Double Flat,Double Flon,Bitmap prof){
+        LatLng floc = new LatLng(Flat, Flon);
+        MarkerOptions m;
+        if(prof!=null) {
+            m = new MarkerOptions()
+                    .position(floc)
+                    .title(email)
+                    .setIcon(iconFactory.fromBitmap(Bitmap.createScaledBitmap(getCroppedBitmap(prof), 120, 135, false)));
+            map.addMarker(m);
+       }
+        // else{
+        //            m = new MarkerOptions()
+        //                    .title(email)
+        //                    .position(floc);
+        //        }
+    }
+    public void showFriends(){
+        for(String f:friends){
+            db.collection("Users").document(f).collection("LastLoc").document(f).get().addOnCompleteListener(task -> {
+                if (task.isSuccessful()) {
+                    DocumentSnapshot document = task.getResult();
+                    Flat=document.getDouble("Lat");
+                    Flon=document.getDouble("Lon");
+                    if(Flat!=null && Flon!=null) {
+                        getFriendsProf(f,Flat,Flon);
+                    }
+                } else {
+                    Timber.d(task.getException(), "get failed with ");
+                }
+            });
+
+
+     }
+    }
     /**
      * This function requests location updates
      */
@@ -474,32 +607,67 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * This functions returns the distance of the coin which is closest to the user
      * @return Distance to closest coin
      */
-    public Double getClosestCoin() {
+    public Double getClosestCoin(String curr) {
+        Location userLocation = locationOrigin;
+        float[] result = new float[1];
         Double minimumDist=0.0;
-        if (markers.size() > 0) {
-            //for the first coin
+        if(curr !=null){
+        for  (int x = 0; x < markers.size(); x++) {
+            //for the first coin that satisfies the currency parameter
             //get its latlong coordinates
             //get the user's location
-            Location userLocation = locationOrigin;
-            float[] result = new float[1];
+                if (markers.get(x).getCurrency().toString().equals(curr)) {
+                    LatLng coin = markers.get(x).getLatLng();
+                    //this function sets result to the distance between that coin and the user in metres
+                    Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                            coin.getLatitude(), coin.getLongitude(), result);
+                    minimumDist = (double) result[0];
+                    break;
+                }
+
+        }
+        }else{
             LatLng coin = markers.get(0).getLatLng();
             //this function sets result to the distance between that coin and the user in metres
             Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
                     coin.getLatitude(), coin.getLongitude(), result);
             minimumDist = (double) result[0];
+        }
 
+
+            //for the first coin  if (markers.size() > 0) {
+            //get its latlong coordinates
+            //get the user's location
             for (int x = 1; x < markers.size(); x++) {
                 //do the same for the rest of the coins and always compare
                 //to check which one has the minimum distance
-                coin = markers.get(x).getLatLng();
-                Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                        coin.getLatitude(), coin.getLongitude(), result);
-                Double dist = (double) result[0];
-                if (dist < minimumDist) {
-                    minimumDist = dist;
-                    closestcoin = markers.get(x);
+                Double dist=0.0;
+                if(curr!=null) {
+                    if (markers.get(x).getCurrency().toString().equals(curr)) {
+                        System.out.println("------------------------------------------------");
+                        System.out.println(curr+"---------"+markers.get(x).getCurrency().toString());
+                        System.out.println("------------------------------------------------");
+                        LatLng coin = markers.get(x).getLatLng();
+                        Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                                coin.getLatitude(), coin.getLongitude(), result);
+                        dist = (double) result[0];
+                        if (dist < minimumDist) {
+                            minimumDist = dist;
+                            closestcoin = markers.get(x);
+                            System.out.println(curr+"---------"+closestcoin.getValue());
+                        }
+                    }
+                }else{
+                    LatLng coin = markers.get(x).getLatLng();
+                    Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                            coin.getLatitude(), coin.getLongitude(), result);
+                    dist = (double) result[0];
+                    if (dist < minimumDist) {
+                        minimumDist = dist;
+                        closestcoin = markers.get(x);
+                        System.out.println(curr+"---------"+closestcoin.getValue());
+                    }
                 }
-            }
 
             }
         return minimumDist;
@@ -512,16 +680,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @SuppressLint("SetTextI18n")
     public void CheckIfClosetoACoin(View view) {
-        Double minimumDist=getClosestCoin();
+        Double minimumDist=getClosestCoin(null);
             //if the user is in the range away from a coin a pop up will allow him/her to collect it
             if (minimumDist <= 2500 && closestcoin.getCurrency()!=null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 // Get the layout inflater
                 LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-                @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup2, null);
+                @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup, null);
                 TextView title =view2.findViewById(R.id.title);
                 title.setText("Do you want to collect it?");
-                TextView info =view2.findViewById(R.id.info);
+                EditText info =view2.findViewById(R.id.editTextDialogUserInput);
+                info.clearFocus();
+                info.setKeyListener(null);
+                info.setHintTextColor(null);
                 String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
                 info.setText(text);
                 builder.setView(view2)
@@ -548,22 +719,62 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         removeMarker(closestcoin.getMarker());
     }
 
+    
+    @SuppressLint("SetTextI18n")
+    public void getSpinner(View view){
+        String returnval = "";
+        LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+        View view3 = inflater.inflate(R.layout.choosecoinpopup, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        Spinner dropdown = view3.findViewById(R.id.spinner);
+        Button b= view3.findViewById(R.id.button);
+        dropdown.setSelection(4);
+        builder.setView(view3).show();
+        b.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                loc= dropdown.getSelectedItemPosition();
+                switch (loc) {
+                    //options for the first spinner
+                    case 0:
+                        navigateToClosestCoin("DOLR");
+                        break;
+                    case 1:
+                        navigateToClosestCoin("QUID");
+                        break;
+                    case 2:
+                        navigateToClosestCoin("PENY");
+                        break;
+                    case 3:
+                        navigateToClosestCoin("SHIL");
+                        break;
+                    case 4:
+                        navigateToClosestCoin(null);
+                        break;
+                }
+
+            }
+        });
+    }
+
     /**
      * This function starts a navigation to the coin closest to the user.
-     * @param view Current view
+     * @param choice choice
      */
-    @SuppressLint("SetTextI18n")
-    public void navigateToClosestCoin(View view){
-        Double mindist=getClosestCoin();
+    private void navigateToClosestCoin(String choice){
+        Double mindist= getClosestCoin(choice);
+        Double dist= getClosestCoin(choice);
         while(closestcoin==null) {
             /* if closest coin has not been retrieved yet */
         }
         LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-        View view3 = inflater.inflate(R.layout.popup2, null);
+        View view3 = inflater.inflate(R.layout.popup, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         TextView title = view3.findViewById(R.id.title);
         title.setText("Closest Coin Found:");
-        TextView info =view3.findViewById(R.id.info);
+        EditText info =view3.findViewById(R.id.editTextDialogUserInput);
+        info.clearFocus();
+        info.setKeyListener(null);
+        info.setHintTextColor(null);
         String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
         info.setText(text);
         builder.setView(view3)
@@ -671,7 +882,71 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent i = new Intent(MainActivity.this, BankActivity.class);
         startActivity(i);
     }
+    private void Settings() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+        @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.setting, null);
+        Switch dayview=view2.findViewById(R.id.dayview);
+        Switch nightview=view2.findViewById(R.id.nightview);
+        Switch stepcounter=view2.findViewById(R.id.stepcounter);
 
+        if(map.getStyleUrl().equals("mapbox://styles/mapbox/streets-v9")){
+            dayview.setChecked(true);
+        }else{
+            nightview.setChecked(true);
+        }
+        if(tvSteps.getVisibility() == View.VISIBLE){
+            stepcounter.setChecked(true);
+        }else{
+            stepcounter.setChecked(false);
+        }
+        Button save= view2.findViewById(R.id.save);
+        AlertDialog alert = builder.setView(view2).show();
+        Button signout= view2.findViewById(R.id.signout);
+        signout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v){
+                FirebaseAuth.getInstance().signOut();
+                Intent i = new Intent(MainActivity.this, LoginScreen.class);
+                startActivity(i);
+            }});
+        save.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v){
+                Boolean day = dayview.isChecked();
+                Boolean night = nightview.isChecked();
+                Boolean step = stepcounter.isChecked();
+                SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = settings.edit();
+                if(day && night){
+                    Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
+                }else if(night){
+                    map.setStyle("mapbox://styles/mapbox/dark-v9");
+                    editor.putString(PREF_MAP,"Dark");
+                    editor.apply();
+                }else if(day){
+                    map.setStyle("mapbox://styles/mapbox/streets-v9");
+                    editor.putString(PREF_MAP,"Light");
+                    editor.apply();
+                }else if(!day&&!night){
+                    Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
+                }
+                if(step){
+                    tvSteps.setVisibility(View.VISIBLE);
+                    stepenable=true;
+                    editor.putString(PREF_STEP,"Enable");
+                    editor.apply();
+                }else{
+                    tvSteps.setVisibility(View.INVISIBLE);
+                    stepenable=false;
+                    editor.putString(PREF_STEP,"Disable");
+                    editor.apply();
+                }
+                alert.dismiss();
+            }});
+
+
+    }
     @Override
     public void onResume() {
         super.onResume();
@@ -724,26 +999,38 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (task.isSuccessful()) {
                 DocumentSnapshot document = task.getResult();
                 if (document.exists()) {
-                    if(document.getDouble("Goal")<=totaldailysteps){
-                        goal=(int) Math.round(document.getDouble("Goal")*2);
-                        goalreached=true;
-                    }
+                        goal=(int) Math.round(document.getDouble("Goal"));
                 }else{
-                    //set goal to 250
+                    //set goal to 50
                     Map<String, Object> step = new HashMap<>();
-                    step.put("Goal",250);
+                    step.put("Goal",50);
                     db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL")
                             .set(step)
                             .addOnSuccessListener(aVoid -> {
                                 Timber.d("DocumentSnapshot successfully updated.");
                             })
                             .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
-                    goal=250;
+                    goal=50;
                 }
             } else {
                 Timber.d(task.getException(), "get failed with ");
             }
         });
+    }
+    private void stepsgoalreached(){
+        if(totaldailysteps>=goal){
+            Map<String, Object> step = new HashMap<>();
+            step.put("Goal",goal*2);
+            db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL")
+                    .set(step)
+                    .addOnSuccessListener(aVoid -> {
+                        Timber.d("DocumentSnapshot successfully updated.");
+                    })
+                    .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
+            goal=goal*2;
+            Toast.makeText(MainActivity.this, "GOAL REACHED! New goal: " + goal, Toast.LENGTH_SHORT).show();
+        }
+
     }
 
     /**
@@ -773,21 +1060,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * This function updates the steps that the user took in Firebase.
      */
     private void updateSteps() {
-        DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
-        Date date = new Date();
-        String date1=dateFormat.format(date);
-        Map<String, Object> step = new HashMap<>();
-        step.put("Steps", totaldailysteps);
-        db.collection("Users").document(user.getEmail()).collection("Steps").document(date1)
-                .set(step)
-                .addOnSuccessListener(aVoid -> {
-                    Timber.d("DocumentSnapshot successfully updated.");
-                })
-                .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
-
-        if(goalreached){
-            Toast.makeText(MainActivity.this,"GOAL REACHED! New goal: "+goal,Toast.LENGTH_SHORT).show();
-        }
+            DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
+            Date date = new Date();
+            String date1 = dateFormat.format(date);
+            Map<String, Object> step = new HashMap<>();
+            step.put("Steps", totaldailysteps);
+            db.collection("Users").document(user.getEmail()).collection("Steps").document(date1)
+                    .set(step)
+                    .addOnSuccessListener(aVoid -> {
+                        Timber.d("DocumentSnapshot successfully updated.");
+                    })
+                    .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
     }
 
     @Override
@@ -816,9 +1099,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @SuppressLint("SetTextI18n")
     @Override
     public void step(long timeNs) {
-        totaldailysteps++;
-        TextView TvSteps= findViewById(R.id.txt_steps);
-        TvSteps.setText(TEXT_NUM_STEPS + totaldailysteps);
-        updateSteps();
+        if(stepenable) {
+            totaldailysteps++;
+            TextView TvSteps = findViewById(R.id.txt_steps);
+            TvSteps.setText(TEXT_NUM_STEPS + totaldailysteps);
+            stepsgoalreached();
+            updateSteps();
+        }
+    }
+    public void showGoal(View view){
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        // Get the layout inflater
+        LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+        @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup, null);
+        TextView title =view2.findViewById(R.id.title);
+        title.setText("Step Counter");
+        EditText info =view2.findViewById(R.id.editTextDialogUserInput);
+        info.clearFocus();
+        info.setKeyListener(null);
+        info.setHintTextColor(null);
+        String text= "Next Goal: \n"+goal;
+        info.setText(text);
+        builder.setView(view2).show();
     }
 }

@@ -23,4 +23,12 @@
     <string name="loc">MY LOCATION</string>
     <string name="campus">CENTRAL CAMPUS</string>
     <string name="deposits">Daily Deposits Made:</string>
+    <string name="tab_5">Settings</string>
+    <string-array name="coinsspinner">
+        <item>DOLR</item>
+        <item>QUID</item>
+        <item>PENY</item>
+        <item>SHIL</item>
+        <item>NO PREFERENCE</item>
+    </string-array>
 </resources>

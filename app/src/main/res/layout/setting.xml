@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_root"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="@font/roboto_light"
+        android:text="Settings"
+        android:textAlignment="center"
+        android:textAppearance="?android:attr/textAppearanceLarge" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Map Style" />
+
+    <Switch
+        android:id="@+id/dayview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="DayView" />
+
+    <Switch
+        android:id="@+id/nightview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nightview" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Step Counter" />
+
+    <Switch
+        android:id="@+id/stepcounter"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enable" />
+
+    <Button
+        android:id="@+id/save"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bluebutton"
+        android:text="Save" />
+
+    <Button
+        android:id="@+id/signout"
+        android:layout_width="match_parent"
+        android:layout_height="42dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bluebutton"
+        android:text="Sign Out" />
+
+</LinearLayout>

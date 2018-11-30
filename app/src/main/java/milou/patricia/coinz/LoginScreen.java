@@ -58,7 +58,7 @@ public class LoginScreen extends AppCompatActivity {
         emailInput=findViewById(R.id.emailInput);
         passwordInput=findViewById(R.id.passwordInput);
         checkBox= findViewById(R.id.rememberme);
-        checkBox.setChecked(true); //by default set it to true
+        //checkBox.setChecked(true); //by default set it to true
 
     }
 
@@ -116,6 +116,7 @@ public class LoginScreen extends AppCompatActivity {
     public void registerUser (View view){
         Intent i = new Intent(LoginScreen.this, RegisterActivity.class);
         startActivity(i);
+        finish();
     }
 
     /**
@@ -202,7 +203,7 @@ public class LoginScreen extends AppCompatActivity {
         passwordInput.setText(PasswordValue);
         if(savedValue=="true"){
             checkBox.setChecked(true);
-        }else{
+        }else if(savedValue=="false"){
             checkBox.setChecked(false);
         }
     }
