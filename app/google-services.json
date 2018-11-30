@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "1050208924147",
+    "firebase_url": "https://coinz-ca336.firebaseio.com",
+    "project_id": "coinz-ca336",
+    "storage_bucket": "coinz-ca336.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1050208924147:android:797eab68d1b4580b",
+        "android_client_info": {
+          "package_name": "milou.patricia.coinz"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1050208924147-h8of5el5u7b6ekr46e2k5bks97mdhre8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "milou.patricia.coinz",
+            "certificate_hash": "41da586b5aefa555ee44e08189e3b35e44b86160"
+          }
+        },
+        {
+          "client_id": "1050208924147-blct668291a4qcrogogdqciu1gp49t7j.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKrdhD2DumnacumYcRm_XWS-zGgNsFPuM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1050208924147-blct668291a4qcrogogdqciu1gp49t7j.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
