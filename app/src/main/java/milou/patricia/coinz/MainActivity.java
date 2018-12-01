@@ -20,6 +20,8 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -72,6 +74,7 @@ import com.mapbox.android.core.permissions.PermissionsManager;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.plugins.locationlayer.LocationLayerPlugin;
 import com.mapbox.mapboxsdk.plugins.locationlayer.modes.CameraMode;
+import com.mapbox.mapboxsdk.plugins.locationlayer.modes.RenderMode;
 import com.mapbox.services.android.navigation.ui.v5.NavigationLauncher;
 import com.mapbox.services.android.navigation.ui.v5.NavigationLauncherOptions;
 import com.mapbox.services.android.navigation.v5.navigation.MapboxNavigation;
@@ -107,6 +110,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private MapView mapView;
     private MapboxMap map;
     private LocationEngine locationEngine;
+    private LocationListener locListener;
     private LocationLayerPlugin locationLayerPlugin;
     private Location locationOrigin;
     private String mapstr="";
@@ -126,6 +130,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String PREF_MAP = "MapStyle";
     private static final String PREF_STEP = "Step Counter";
     private Boolean campus=false;
+    private Boolean wait=false;
     public static String shil,peny,dolr,quid;
     private ArrayList<Coin> markers= new ArrayList<Coin>();
     private Coin closestcoin = new Coin();
@@ -163,6 +168,23 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
             IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
         }
+        locListener = new LocationListener() {
+            @Override
+            public void onStatusChanged(String provider, int status,
+                                        Bundle extras) {
+            }
+            @Override
+            public void onProviderEnabled(String provider) {
+            }
+            @Override
+            public void onProviderDisabled(String provider) {
+            }
+            @Override
+            public void onLocationChanged(Location location) {
+                System.out.println("mobile location is in listener="+location);
+                locationOrigin = location;
+            }
+        };
         //getFriends();
         //set up navigation
         editNavigationBars();
@@ -337,7 +359,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @param colour Color to use
      * @return New Icon of that marker
      */
-    public Icon getColourIcon(Icon icon,String colour){
+    public Icon getColourIcon(Icon icon,String colour) {
         final Bitmap bmp =icon.getBitmap();
         int [] allpixels = new int [bmp.getHeight() * bmp.getWidth()];
         bmp.getPixels(allpixels, 0, bmp.getWidth(), 0, 0, bmp.getWidth(), bmp.getHeight());
@@ -351,7 +373,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
        bmp.setPixels(allpixels,0,bmp.getWidth(),0, 0,bmp.getWidth(),bmp.getHeight());
-       return iconFactory.fromBitmap(bmp);
+        return iconFactory.fromBitmap(bmp);
     }
 
     /**
@@ -388,14 +410,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(MapboxMap mapboxMap) {
         map=mapboxMap;
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
-        String styleValue = settings.getString(PREF_MAP, "");
-        if(styleValue.equals("Dark")){
-            map.setStyle("mapbox://styles/mapbox/dark-v9");
-        }else if(styleValue.equals("Light")){
-            map.setStyle("mapbox://styles/mapbox/streets-v9");
+        if (mapboxMap == null) {
+            Log.d("map", "[onMapReady] mapBox is null");
+        } else {
+            SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
+            String styleValue = settings.getString(PREF_MAP, "");
+            if(styleValue.equals("Dark")){
+                map.setStyle("mapbox://styles/mapbox/dark-v9");
+            }else if(styleValue.equals("Light")){
+                map.setStyle("mapbox://styles/mapbox/streets-v9");
+            }
+            // Set user interface options
+            map.getUiSettings().setCompassEnabled(true);
+            //map.getUiSettings().setZoomControlsEnabled(true);
+            // Make location information available
+            enableLocation();
         }
-        enableLocation();
     }
 
     /**
@@ -405,10 +435,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Check if permissions are enabled and if not request
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
             initializeLocationEngine();
-            // Create an instance of the plugin. Adding in LocationLayerOptions is also an optional
-            // parameter
+            // Create an instance of the plugin. Adding in LocationLayerOptions is also an optional parameter
             LocationLayerPlugin locationLayerPlugin = new LocationLayerPlugin(mapView,map);
-
             // Set the plugin's camera mode
             locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
             getLifecycle().addObserver(locationLayerPlugin);
@@ -423,27 +451,32 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @SuppressWarnings("MissingPermission")
     private void initializeLocationEngine() {
-        LocationEngineProvider locationEngineProvider = new LocationEngineProvider(this);
-        locationEngine = locationEngineProvider.obtainBestLocationEngineAvailable();
+        locationEngine = new LocationEngineProvider(this).obtainBestLocationEngineAvailable();
+        locationEngine.addLocationEngineListener(this);
+        locationEngine.setInterval(5000); // preferably every 5 seconds
+        locationEngine.setFastestInterval(1000); // at most every second
         locationEngine.setPriority(LocationEnginePriority.HIGH_ACCURACY);
         locationEngine.activate();
         Location lastLocation = locationEngine.getLastLocation();
-        Date date = new Date();
         if (lastLocation != null) {
             locationOrigin = lastLocation;
-            Map<String, Object> loc = new HashMap<>();
-            loc.put("Lat", lastLocation.getLatitude());
-            loc.put("Lon", lastLocation.getLongitude());
-            //loc.put("time", date.getTime());
-            //update user
-            db.collection("Users").document(user.getEmail()).collection("LastLoc").document(user.getEmail())
-                    .set(loc)
-                    .addOnSuccessListener(aVoid -> {
-                        Timber.i("Location updated in Firebase");
-                    })
-                    .addOnFailureListener(e -> Timber.i("Location not updated in Firebase"));
+            setCameraPosition(lastLocation);
+        }
+    }
+
+    @SuppressWarnings("MissingPermission")
+    private void initializeLocationLayer() {
+        if (mapView == null) {
+            Timber.d("mapView is null");
         } else {
-            locationEngine.addLocationEngineListener(this);
+            if (map == null) {
+                Timber.d("map is null");
+            } else {
+                locationLayerPlugin = new LocationLayerPlugin(mapView,map, locationEngine);
+                locationLayerPlugin.setLocationLayerEnabled(true);
+                locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
+                locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
+            }
         }
     }
     public void getFriends(){
@@ -527,7 +560,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @SuppressWarnings("MissingPermission")
     public void onConnected() {
+        //locationEngine.requestLocationUpdates();
+       // locationEngine.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 1, locListener);
         locationEngine.requestLocationUpdates();
+        locationOrigin = locationEngine.getLastLocation();//.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
     }
     @Override
@@ -597,12 +633,47 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @Override
     public void onLocationChanged(Location location) {
-        if(location!=null){
-            locationOrigin=location;
-            setCameraPosition(locationOrigin); //was location before
+        if (location == null) {
+            Timber.d("[onLocationChanged] location is null");
+        } else {
+            Timber.d("[onLocationChanged] location is not null");
+            locationOrigin = location;
+            if((markers.size()>0)) {
+                if (!wait) {
+                    checkifclosetocoin();
+                }
+            }
+            setCameraPosition(location);
         }
     }
 
+    private void checkifclosetocoin(){
+        Double minimumDist=getClosestCoin(null);
+        //if the user is in the range away from a coin a pop up will allow him/her to collect it
+        if (minimumDist <= 25 && closestcoin.getCurrency()!=null) {
+            wait=true;
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            // Get the layout inflater
+            LayoutInflater inflater = MainActivity.this.getLayoutInflater();
+            @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup, null);
+            TextView title =view2.findViewById(R.id.title);
+            title.setText("Do you want to collect it?");
+            EditText info =view2.findViewById(R.id.editTextDialogUserInput);
+            info.clearFocus();
+            info.setKeyListener(null);
+            info.setHintTextColor(null);
+            String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
+            info.setText(text);
+            builder.setView(view2)
+                    // Add action buttons
+                    .setPositiveButton("Yeah!", (dialog, whichButton) -> {
+                        //add coin in wallet
+                        wait=false;
+                        addCoin();
+                    }).setNegativeButton("Cancel", (dialog, whichButton) -> { wait=false;
+            }).show();
+        }
+    }
     /**
      * This functions returns the distance of the coin which is closest to the user
      * @return Distance to closest coin
@@ -611,42 +682,52 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Location userLocation = locationOrigin;
         float[] result = new float[1];
         Double minimumDist=0.0;
-        if(curr !=null){
-        for  (int x = 0; x < markers.size(); x++) {
-            //for the first coin that satisfies the currency parameter
-            //get its latlong coordinates
-            //get the user's location
-                if (markers.get(x).getCurrency().toString().equals(curr)) {
-                    LatLng coin = markers.get(x).getLatLng();
-                    //this function sets result to the distance between that coin and the user in metres
-                    Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                            coin.getLatitude(), coin.getLongitude(), result);
-                    minimumDist = (double) result[0];
-                    break;
-                }
-
-        }
-        }else{
-            LatLng coin = markers.get(0).getLatLng();
-            //this function sets result to the distance between that coin and the user in metres
-            Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                    coin.getLatitude(), coin.getLongitude(), result);
-            minimumDist = (double) result[0];
-        }
-
-
-            //for the first coin  if (markers.size() > 0) {
-            //get its latlong coordinates
-            //get the user's location
-            for (int x = 1; x < markers.size(); x++) {
-                //do the same for the rest of the coins and always compare
-                //to check which one has the minimum distance
-                Double dist=0.0;
-                if(curr!=null) {
+           if(curr !=null){
+            for  (int x = 0; x < markers.size(); x++) {
+                //for the first coin that satisfies the currency parameter
+                //get its latlong coordinates
+                //get the user's location
                     if (markers.get(x).getCurrency().toString().equals(curr)) {
-                        System.out.println("------------------------------------------------");
-                        System.out.println(curr+"---------"+markers.get(x).getCurrency().toString());
-                        System.out.println("------------------------------------------------");
+                        LatLng coin = markers.get(x).getLatLng();
+                        //this function sets result to the distance between that coin and the user in metres
+                        Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                                coin.getLatitude(), coin.getLongitude(), result);
+                        minimumDist = (double) result[0];
+                        System.out.println("###########################DISTANCE BETWEEN : "+ minimumDist);
+                        break;
+                    }
+
+            }
+            }else{
+                LatLng coin = markers.get(0).getLatLng();
+                //this function sets result to the distance between that coin and the user in metres
+                Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                        coin.getLatitude(), coin.getLongitude(), result);
+                minimumDist = (double) result[0];
+            }
+                //for the first coin  if (markers.size() > 0) {
+                //get its latlong coordinates
+                //get the user's location
+                for (int x = 1; x < markers.size(); x++) {
+                    //do the same for the rest of the coins and always compare
+                    //to check which one has the minimum distance
+                    Double dist = 0.0;
+                    if (curr != null) {
+                        if (markers.get(x).getCurrency().toString().equals(curr)) {
+                            System.out.println("------------------------------------------------");
+                            System.out.println(curr + "---------" + markers.get(x).getCurrency().toString());
+                            System.out.println("------------------------------------------------");
+                            LatLng coin = markers.get(x).getLatLng();
+                            Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
+                                    coin.getLatitude(), coin.getLongitude(), result);
+                            dist = (double) result[0];
+                            if (dist < minimumDist) {
+                                minimumDist = dist;
+                                closestcoin = markers.get(x);
+                                System.out.println(curr + "---------" + closestcoin.getValue());
+                            }
+                        }
+                    } else {
                         LatLng coin = markers.get(x).getLatLng();
                         Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
                                 coin.getLatitude(), coin.getLongitude(), result);
@@ -654,59 +735,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if (dist < minimumDist) {
                             minimumDist = dist;
                             closestcoin = markers.get(x);
-                            System.out.println(curr+"---------"+closestcoin.getValue());
+                            System.out.println(curr + "---------" + closestcoin.getValue());
                         }
-                    }
-                }else{
-                    LatLng coin = markers.get(x).getLatLng();
-                    Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
-                            coin.getLatitude(), coin.getLongitude(), result);
-                    dist = (double) result[0];
-                    if (dist < minimumDist) {
-                        minimumDist = dist;
-                        closestcoin = markers.get(x);
-                        System.out.println(curr+"---------"+closestcoin.getValue());
-                    }
-                }
 
-            }
+        }}
         return minimumDist;
-    }
-
-    /**
-     * This function checks if the user is 25 metres away from a coin
-     * If yes, the user can collect it
-     * @param view Current View
-     */
-    @SuppressLint("SetTextI18n")
-    public void CheckIfClosetoACoin(View view) {
-        Double minimumDist=getClosestCoin(null);
-            //if the user is in the range away from a coin a pop up will allow him/her to collect it
-            if (minimumDist <= 2500 && closestcoin.getCurrency()!=null) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                // Get the layout inflater
-                LayoutInflater inflater = MainActivity.this.getLayoutInflater();
-                @SuppressLint("InflateParams") View view2= inflater.inflate(R.layout.popup, null);
-                TextView title =view2.findViewById(R.id.title);
-                title.setText("Do you want to collect it?");
-                EditText info =view2.findViewById(R.id.editTextDialogUserInput);
-                info.clearFocus();
-                info.setKeyListener(null);
-                info.setHintTextColor(null);
-                String text= closestcoin.getCurrency()+"   "+closestcoin.getValue();
-                info.setText(text);
-                builder.setView(view2)
-                        // Add action buttons
-                        .setPositiveButton("Yeah!", (dialog, whichButton) -> {
-                            //add coin in wallet
-                            addCoin();
-                        }).setNegativeButton("Cancel", (dialog, whichButton) -> {
-                            // Do nothing.
-                        }).show();
-            }else{
-                //if the user is not close
-                Toast.makeText(MainActivity.this,"Get closer!",Toast.LENGTH_SHORT).show();
-            }
     }
 
     /**
@@ -990,7 +1023,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     /**
-     * This function gets the goal stored in the firebase. If not(first time played) the goal is set to 250.
+     * This function gets the goal stored in the firebase. If not(first time played) the goal is set to 50.
      */
     private void getStepGoal(){
         //get goal
@@ -1000,6 +1033,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 DocumentSnapshot document = task.getResult();
                 if (document.exists()) {
                         goal=(int) Math.round(document.getDouble("Goal"));
+                        if(goal==0){
+                            goal=50;
+                        }
                 }else{
                     //set goal to 50
                     Map<String, Object> step = new HashMap<>();
