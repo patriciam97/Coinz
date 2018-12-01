@@ -60,7 +60,7 @@
                 android:layout_weight="1"
                 android:background="@drawable/button2"
                 android:onClick="getSpinner"
-                android:text="NAIGATION TO CLOSEST COIN"
+                android:text="NAVIGATION TO CLOSEST COIN"
                 android:textAlignment="center"
                 android:textColor="#57bab7"
                 android:textSize="12sp" />

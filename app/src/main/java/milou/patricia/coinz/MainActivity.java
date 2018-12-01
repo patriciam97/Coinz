@@ -181,7 +181,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
             @Override
             public void onLocationChanged(Location location) {
-                System.out.println("mobile location is in listener="+location);
                 locationOrigin = location;
             }
         };
@@ -703,7 +702,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
                                 coin.getLatitude(), coin.getLongitude(), result);
                         minimumDist = (double) result[0];
-                        System.out.println("###########################DISTANCE BETWEEN : "+ minimumDist);
                         break;
                     }
 
@@ -724,9 +722,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Double dist = 0.0;
                     if (curr != null) {
                         if (markers.get(x).getCurrency().toString().equals(curr)) {
-                            System.out.println("------------------------------------------------");
-                            System.out.println(curr + "---------" + markers.get(x).getCurrency().toString());
-                            System.out.println("------------------------------------------------");
                             LatLng coin = markers.get(x).getLatLng();
                             Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
                                     coin.getLatitude(), coin.getLongitude(), result);
@@ -734,7 +729,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                             if (dist < minimumDist) {
                                 minimumDist = dist;
                                 closestcoin = markers.get(x);
-                                System.out.println(curr + "---------" + closestcoin.getValue());
                             }
                         }
                     } else {
@@ -745,7 +739,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         if (dist < minimumDist) {
                             minimumDist = dist;
                             closestcoin = markers.get(x);
-                            System.out.println(curr + "---------" + closestcoin.getValue());
                         }
 
         }}
