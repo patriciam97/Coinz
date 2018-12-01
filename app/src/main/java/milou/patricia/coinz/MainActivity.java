@@ -338,17 +338,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @return Icon icon with specific number
      */
     public Icon getNumIcon(String markersymbol){
+        Icon icon=null;
         switch (markersymbol) {
-            case "0": return iconFactory.fromBitmap(IMarkers[0]);
-            case "1": return iconFactory.fromBitmap(IMarkers[1]);
-            case "2": return iconFactory.fromBitmap(IMarkers[2]);
-            case "3": return iconFactory.fromBitmap(IMarkers[3]);
-            case "4": return iconFactory.fromBitmap(IMarkers[4]);
-            case "5": return iconFactory.fromBitmap(IMarkers[5]);
-            case "6": return iconFactory.fromBitmap(IMarkers[6]);
-            case "7": return iconFactory.fromBitmap(IMarkers[7]);
-            case "8": return iconFactory.fromBitmap(IMarkers[8]);
-            case "9": return iconFactory.fromBitmap(IMarkers[9]);
+            case "0": icon= iconFactory.fromBitmap(IMarkers[0]);
+                        break;
+            case "1": icon= iconFactory.fromBitmap(IMarkers[1]);
+                        break;
+            case "2":  icon= iconFactory.fromBitmap(IMarkers[2]);
+                        break;
+            case "3":  icon= iconFactory.fromBitmap(IMarkers[3]);
+                        break;
+            case "4":  icon= iconFactory.fromBitmap(IMarkers[4]);
+                        break;
+            case "5":  icon= iconFactory.fromBitmap(IMarkers[5]);
+                        break;
+            case "6":  icon= iconFactory.fromBitmap(IMarkers[6]);
+                        break;
+            case "7":  icon= iconFactory.fromBitmap(IMarkers[7]);
+                        break;
+            case "8":  icon= iconFactory.fromBitmap(IMarkers[8]);
+                        break;
+            case "9":  icon= iconFactory.fromBitmap(IMarkers[9]);
+                        break;
         }
        return icon;
     }
@@ -643,7 +654,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     checkifclosetocoin();
                 }
             }
-            setCameraPosition(location);
         }
     }
 
