@@ -1,8 +1,8 @@
 package milou.patricia.coinz;
 
 
-import android.support.test.espresso.UiController;
-import android.support.test.espresso.ViewAction;
+import android.os.IBinder;
+import android.support.test.espresso.Root;
 import android.support.test.espresso.ViewInteraction;
 import android.support.test.filters.LargeTest;
 import android.support.test.rule.ActivityTestRule;
@@ -10,7 +10,7 @@ import android.support.test.runner.AndroidJUnit4;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
-import android.widget.TextView;
+import android.view.WindowManager;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -25,7 +25,6 @@ import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard
 import static android.support.test.espresso.action.ViewActions.replaceText;
 import static android.support.test.espresso.action.ViewActions.scrollTo;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
-import static android.support.test.espresso.matcher.ViewMatchers.isAssignableFrom;
 import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
@@ -36,33 +35,13 @@ import static org.hamcrest.Matchers.is;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class walletTest {
+public class friendsTest {
 
     @Rule
     public ActivityTestRule<SplashScreen> mActivityTestRule = new ActivityTestRule<>(SplashScreen.class);
-    String getText(final Matcher<View> matcher) {
-        final String[] stringHolder = { null };
-        onView(matcher).perform(new ViewAction() {
-            @Override
-            public Matcher<View> getConstraints() {
-                return isAssignableFrom(TextView.class);
-            }
-
-            @Override
-            public String getDescription() {
-                return "getting text from a TextView";
-            }
-
-            @Override
-            public void perform(UiController uiController, View view) {
-                TextView tv = (TextView)view; //Save, because of check in getConstraints()
-                stringHolder[0] = tv.getText().toString();
-            }
-        });
-        return stringHolder[0];
-    }
     @Test
-    public void walletTest() {
+    public void closestCoinandNavigationTest() {
+
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
@@ -72,7 +51,7 @@ public class walletTest {
             e.printStackTrace();
         }
 
-        ViewInteraction appCompatEditText = onView(
+        ViewInteraction appCompatEditText2 = onView(
                 allOf(withId(R.id.emailInput),
                         childAtPosition(
                                 allOf(withId(R.id.relativeLayout2),
@@ -81,9 +60,9 @@ public class walletTest {
                                                 0)),
                                 2),
                         isDisplayed()));
-        appCompatEditText.perform(replaceText("patriciamilou97@gmail.com"), closeSoftKeyboard());
+        appCompatEditText2.perform(replaceText("patriciamilou97@gmail.com"));
 
-        ViewInteraction appCompatEditText2 = onView(
+        ViewInteraction appCompatEditText5 = onView(
                 allOf(withId(R.id.passwordInput),
                         childAtPosition(
                                 allOf(withId(R.id.relativeLayout2),
@@ -92,8 +71,7 @@ public class walletTest {
                                                 0)),
                                 3),
                         isDisplayed()));
-        appCompatEditText2.perform(replaceText("demo12345"), closeSoftKeyboard());
-
+        appCompatEditText5.perform(replaceText("demo12345"), closeSoftKeyboard());
 
         ViewInteraction appCompatButton = onView(
                 allOf(withId(R.id.loginbtn), withText("Sign In"),
@@ -110,6 +88,12 @@ public class walletTest {
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
         try {
+            Thread.sleep(20000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -121,50 +105,108 @@ public class walletTest {
                                 childAtPosition(
                                         withId(R.id.bottom_navigation),
                                         1),
-                                2),
-                        isDisplayed()));
-        frameLayout.perform(click());
-
-        // Added a sleep statement to match the app's execution delay.
-        // The recommended way to handle such scenarios is to use Espresso idling resources:
-        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
-
-        String text=getText(withId(R.id.deposits)).toString();
-        String[] c = text.split(":");
-        int counter=0;
-        if(c.length>0) {
-            counter = Integer.parseInt(c[1]);
-        }
-        ViewInteraction tableRow5 = onView(
-                childAtPosition(
-                        allOf(withId(R.id.table1),
-                                childAtPosition(
-                                        withClassName(is("android.widget.RelativeLayout")),
-                                        0)),
-                        0));
-        tableRow5.perform(scrollTo(),click());
-
-        ViewInteraction appCompatTextView4 = onView(
-                allOf(withId(R.id.deposit), withText("Deposit coin into your bank account"),
-                        childAtPosition(
-                                allOf(withId(R.id.layout_item_id),
-                                        childAtPosition(
-                                                withId(R.id.custom),
-                                                0)),
                                 1),
                         isDisplayed()));
-        appCompatTextView4.perform(click());
+        frameLayout.perform(click());
         try {
             Thread.sleep(10000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        ViewInteraction textView2 = onView(withId(R.id.deposits))
-                .check(matches(withText(containsString("Daily Deposits Made:"+(counter+1)))));
 
+        ViewInteraction appCompatButton2 = onView(
+                allOf(withId(R.id.add),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(android.R.id.content),
+                                        0),
+                                1),
+                        isDisplayed()));
+        appCompatButton2.perform(click());
 
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        ViewInteraction appCompatEditText3 = onView(
+                allOf(withId(R.id.editTextDialogUserInput),
+                        isDisplayed()));
+        appCompatEditText3.perform(replaceText("patriciamilou97@gmail.com"));
+        ViewInteraction appCompatButton3 = onView(
+                allOf(withText("Send Friend Request"),
+                        isDisplayed()));
+        appCompatButton3.perform(click());
+        onView(withText("You cannot add yourself.")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        appCompatButton2 = onView(
+                allOf(withId(R.id.add),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(android.R.id.content),
+                                        0),
+                                1),
+                        isDisplayed()));
+        appCompatButton2.perform(click());
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        appCompatEditText3 = onView(
+                allOf(withId(R.id.editTextDialogUserInput),
+                        isDisplayed()));
+        appCompatEditText3.perform(replaceText("stefanosp1997@hotmail.com"));
+        appCompatButton3 = onView(
+                allOf(withText("Send Friend Request"),
+                        isDisplayed()));
+        appCompatButton3.perform(click());
+        onView(withText("You are already friends with stefanosp1997@hotmail.com")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        appCompatButton2 = onView(
+                allOf(withId(R.id.add),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(android.R.id.content),
+                                        0),
+                                1),
+                        isDisplayed()));
+        appCompatButton2.perform(click());
+
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        appCompatEditText3 = onView(
+                allOf(withId(R.id.editTextDialogUserInput),
+                        isDisplayed()));
+        appCompatEditText3.perform(replaceText("12345678912"));
+        appCompatButton3 = onView(
+                allOf(withText("Send Friend Request"),
+                        isDisplayed()));
+        appCompatButton3.perform(click());
+        onView(withText("Email is not valid.")).inRoot(new ToastMatcher())
+                .check(matches(isDisplayed()));
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-
     private static Matcher<View> childAtPosition(
             final Matcher<View> parentMatcher, final int position) {
 

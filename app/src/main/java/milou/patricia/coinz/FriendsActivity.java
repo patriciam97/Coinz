@@ -69,7 +69,7 @@ public class FriendsActivity extends AppCompatActivity {
                 .setPositiveButton("Send Friend Request", (dialog12, whichButton) -> {
                     String value = input.getText().toString();
                     //check that the email address entered is not the same as the user's email address(Adding himself)
-                    if (!user.getEmail().equals(value)&& !sf.friends.contains(value)) {
+                    if (!user.getEmail().equals(value)&& !sf.friends.contains(value) && value!=null) {
                         db.collection("Users").document(value).collection("Info").document(value)
                                 .get()
                                 .addOnCompleteListener(task -> {

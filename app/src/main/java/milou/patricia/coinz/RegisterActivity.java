@@ -32,30 +32,35 @@ public class RegisterActivity extends AppCompatActivity {
     /**
      * Validate that the inputs are in the right format
      */
-    private void ValidateFields(){
+    private boolean ValidateFields(){
+        boolean wait=false;
         Toast.makeText(RegisterActivity.this, "Validating", Toast.LENGTH_SHORT).show();
 
         if(!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
             emailET.setError("Username is required");
             emailET.requestFocus();
+            wait=true;
         }
         if(password.isEmpty()){
             passwordET.setError("Username is required");
             passwordET.requestFocus();
+            wait=true;
         }
         //Password has to be more than 6 characters
         if (password.length()<6){
             passwordET.setError("Minimum length of password is 6");
             passwordET.requestFocus();
+            wait=true;
         }
+        return wait;
     }
 
     /**
      * Register the user, by creating a user on Firebase.
      */
     private void registerUser() {
-        ValidateFields();
-         if(!checkIfUserExists()) {
+        boolean res=ValidateFields();
+        if(!checkIfUserExists() && !res) {
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {

@@ -15,11 +15,13 @@ import android.widget.TextView;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.hamcrest.core.IsInstanceOf;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static android.support.test.espresso.Espresso.onView;
+import static android.support.test.espresso.Espresso.pressBack;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static android.support.test.espresso.action.ViewActions.replaceText;
@@ -30,18 +32,19 @@ import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 @LargeTest
 @RunWith(AndroidJUnit4.class)
-public class walletTest {
+public class depositTest {
 
     @Rule
     public ActivityTestRule<SplashScreen> mActivityTestRule = new ActivityTestRule<>(SplashScreen.class);
     String getText(final Matcher<View> matcher) {
-        final String[] stringHolder = { null };
+        final String[] stringHolder = {null};
         onView(matcher).perform(new ViewAction() {
             @Override
             public Matcher<View> getConstraints() {
@@ -55,14 +58,14 @@ public class walletTest {
 
             @Override
             public void perform(UiController uiController, View view) {
-                TextView tv = (TextView)view; //Save, because of check in getConstraints()
+                TextView tv = (TextView) view; //Save, because of check in getConstraints()
                 stringHolder[0] = tv.getText().toString();
             }
         });
         return stringHolder[0];
     }
     @Test
-    public void walletTest() {
+    public void depositTest() {
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
@@ -83,6 +86,15 @@ public class walletTest {
                         isDisplayed()));
         appCompatEditText.perform(replaceText("patriciamilou97@gmail.com"), closeSoftKeyboard());
 
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         ViewInteraction appCompatEditText2 = onView(
                 allOf(withId(R.id.passwordInput),
                         childAtPosition(
@@ -93,7 +105,6 @@ public class walletTest {
                                 3),
                         isDisplayed()));
         appCompatEditText2.perform(replaceText("demo12345"), closeSoftKeyboard());
-
 
         ViewInteraction appCompatButton = onView(
                 allOf(withId(R.id.loginbtn), withText("Sign In"),
@@ -121,30 +132,62 @@ public class walletTest {
                                 childAtPosition(
                                         withId(R.id.bottom_navigation),
                                         1),
-                                2),
+                                3),
                         isDisplayed()));
         frameLayout.perform(click());
 
         // Added a sleep statement to match the app's execution delay.
         // The recommended way to handle such scenarios is to use Espresso idling resources:
         // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
-
-        String text=getText(withId(R.id.deposits)).toString();
-        String[] c = text.split(":");
-        int counter=0;
-        if(c.length>0) {
-            counter = Integer.parseInt(c[1]);
+        String text=getText(withId(R.id.totaltxt));
+        while(text.equals("TextView")){
+            try {
+                Thread.sleep(1000);
+                text=getText(withId(R.id.totaltxt));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
-        ViewInteraction tableRow5 = onView(
+        double gold1= Double.parseDouble(text.split(":")[1]);
+        pressBack();
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        ViewInteraction frameLayout2 = onView(
+                allOf(withId(R.id.bottom_navigation_container),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.bottom_navigation),
+                                        1),
+                                2),
+                        isDisplayed()));
+        frameLayout2.perform(click());
+
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        ViewInteraction tableRow = onView(
                 childAtPosition(
                         allOf(withId(R.id.table1),
                                 childAtPosition(
                                         withClassName(is("android.widget.RelativeLayout")),
                                         0)),
                         0));
-        tableRow5.perform(scrollTo(),click());
+        tableRow.perform(scrollTo(), click());
 
-        ViewInteraction appCompatTextView4 = onView(
+        ViewInteraction appCompatTextView = onView(
                 allOf(withId(R.id.deposit), withText("Deposit coin into your bank account"),
                         childAtPosition(
                                 allOf(withId(R.id.layout_item_id),
@@ -153,16 +196,40 @@ public class walletTest {
                                                 0)),
                                 1),
                         isDisplayed()));
-        appCompatTextView4.perform(click());
+        appCompatTextView.perform(click());
+
+        pressBack();
+        pressBack();
+        // Added a sleep statement to match the app's execution delay.
+        // The recommended way to handle such scenarios is to use Espresso idling resources:
+        // https://google.github.io/android-testing-support-library/docs/espresso/idling-resource/index.html
         try {
-            Thread.sleep(10000);
+            Thread.sleep(20000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        ViewInteraction textView2 = onView(withId(R.id.deposits))
-                .check(matches(withText(containsString("Daily Deposits Made:"+(counter+1)))));
 
+        ViewInteraction frameLayout3 = onView(
+                allOf(withId(R.id.bottom_navigation_container),
+                        childAtPosition(
+                                childAtPosition(
+                                        withId(R.id.bottom_navigation),
+                                        1),
+                                3),
+                        isDisplayed()));
+        frameLayout3.perform(click());
 
+        text=getText(withId(R.id.totaltxt));
+        while(text.equals("TextView")){
+            try {
+                Thread.sleep(1000);
+                text=getText(withId(R.id.totaltxt));
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        double gold2= Double.parseDouble(text.split(":")[1]);
+        assertThat(gold2,greaterThan(gold1));
     }
 
     private static Matcher<View> childAtPosition(

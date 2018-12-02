@@ -17,6 +17,7 @@ import android.text.InputType;
 import android.text.method.HideReturnsTransformationMethod;
 import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -118,7 +119,8 @@ public class LoginScreen extends AppCompatActivity {
         startActivity(i);
         finish();
     }
-
+    private void ValidateFields(){
+    }
     /**
      * This function logins the user.
      * @param view Current View
@@ -127,25 +129,29 @@ public class LoginScreen extends AppCompatActivity {
         //get email and password input from the user
         email=emailInput.getText().toString();
         password=passwordInput.getText().toString();
-        mAuth.signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener(this, task -> {
-                    if (task.isSuccessful()) {
-                        // Sign in success, update UI with the signed-in user's information
-                        Toast.makeText(LoginScreen.this, "User Login Successful", Toast.LENGTH_SHORT).show();
-                        user = mAuth.getCurrentUser();
-                        updateUI(user);
-                        Intent i = new Intent(LoginScreen.this, MainActivity.class);
-                        startActivity(i);
-                        finish();
-                        Timber.i("Success");
+        if(!password.equals("") &&!email.equals("")) {
+            mAuth.signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(this, task -> {
+                        if (task.isSuccessful()) {
+                            // Sign in success, update UI with the signed-in user's information
+                            Toast.makeText(LoginScreen.this, "User Login Successful", Toast.LENGTH_SHORT).show();
+                            user = mAuth.getCurrentUser();
+                            updateUI(user);
+                            Intent i = new Intent(LoginScreen.this, MainActivity.class);
+                            startActivity(i);
+                            finish();
+                            Timber.i("Success");
 
-                    } else {
-                        // If sign in fails, display a message to the user.
-                        updateUI(null);
-                        Toast.makeText(LoginScreen.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
-                        Timber.i("Failure");
-                    }
-                });
+                        } else {
+                            // If sign in fails, display a message to the user.
+                            updateUI(null);
+                            Toast.makeText(LoginScreen.this, "An error has occured please try again.", Toast.LENGTH_SHORT).show();
+                            Timber.i("Failure");
+                        }
+                    });
+        }else{
+            Toast.makeText(LoginScreen.this, "Enter your email address and password to login.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     /**
@@ -166,9 +172,11 @@ public class LoginScreen extends AppCompatActivity {
                     //get email address
                     Editable value =input.getText();
                     //send email
-                    mAuth.sendPasswordResetEmail(value.toString());
-                    Toast.makeText(LoginScreen.this, "Check your inbox for a password reset email", Toast.LENGTH_SHORT).show();
-                    Timber.i("Passrod Reset Email Send.");
+                    if(value!=null && !value.equals("")) {
+                        mAuth.sendPasswordResetEmail(value.toString());
+                        Toast.makeText(LoginScreen.this, "Check your inbox for a password reset email", Toast.LENGTH_SHORT).show();
+                        Timber.i("Passrod Reset Email Send.");
+                    }
                 }).setNegativeButton("Cancel", (dialog, whichButton) -> {
                     // Do nothing.
                 }).show();
