@@ -44,7 +44,7 @@ public class DownloadFileTask extends AsyncTask<String,Void, String> {
         String text="",line;
         while ((line = reader.readLine()) != null)
         {
-            text=text+"\n"+line;
+            text += "\n" + line;
         }
         return text;
     }

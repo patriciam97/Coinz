@@ -64,7 +64,7 @@ public class FriendsActivity extends AppCompatActivity {
         title.setText("Find your new friend");
         final EditText input =view2.findViewById(R.id.editTextDialogUserInput);
         //show a dialog where the user will have to input an email addess
-        Dialog dialog = new AlertDialog.Builder(this).setView(view2)
+        new AlertDialog.Builder(this).setView(view2)
                 // Add action buttons
                 .setPositiveButton("Send Friend Request", (dialog12, whichButton) -> {
                     String value = input.getText().toString();
@@ -154,7 +154,7 @@ public class FriendsActivity extends AppCompatActivity {
         title.setText("New Friend Request");
         TextView info =view2.findViewById(R.id.info);
         info.setText(sender);
-        Dialog dialog = new AlertDialog.Builder(FriendsActivity.this).setView(view2)
+        new AlertDialog.Builder(FriendsActivity.this).setView(view2)
                 // Add action buttons
                 .setPositiveButton("Accept", (dialog12, whichButton) -> {
                     //friend object

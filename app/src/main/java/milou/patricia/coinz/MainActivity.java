@@ -4,34 +4,24 @@ package milou.patricia.coinz;
 import android.annotation.SuppressLint;
 
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
-import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -43,18 +33,12 @@ import android.widget.Toast;
 
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigation;
 import com.aurelhubert.ahbottomnavigation.AHBottomNavigationItem;
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 
-import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.api.directions.v5.DirectionsCriteria;
 import com.mapbox.api.directions.v5.models.DirectionsResponse;
@@ -110,7 +94,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private MapView mapView;
     private MapboxMap map;
     private LocationEngine locationEngine;
-    private LocationListener locListener;
     private LocationLayerPlugin locationLayerPlugin;
     private Location locationOrigin;
     private String mapstr="";
@@ -124,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String TEXT_NUM_STEPS = "Number of Steps: ";
     private int totaldailysteps=0;
     private int goal;
-    private boolean goalreached=false;
     //others
     private static final String PREFS_NAME = "preferences";
     private static final String PREF_MAP = "MapStyle";
@@ -132,14 +114,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Boolean campus=false;
     private Boolean wait=false;
     public static String shil,peny,dolr,quid;
-    private ArrayList<Coin> markers= new ArrayList<Coin>();
+    private ArrayList<Coin> markers= new ArrayList<>();
     private Coin closestcoin = new Coin();
     private int loc=10;
     private TextView tvSteps;
     private boolean stepenable=true;
-    private Bitmap Fbmp ;
-    private Double Flat,Flon;
-    private ArrayList<String> friends= new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -148,11 +127,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         //set the map
         Mapbox.getInstance(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pqaWl3aHFqMWMyeDNsbXh4MndnY3hzMiJ9.Fqn_9bmuScR4IqUrUbP6lA");
         setContentView(R.layout.activity_main);
-        mapView = (MapView) findViewById(R.id.mapView);
+        mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
         //get current date in the format 2018/10/09
-        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
+        @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
         Date date = new Date();
         String date1=dateFormat.format(date);
         //get current user
@@ -168,6 +147,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             Bitmap imageBitmap = BitmapFactory.decodeResource(getResources(),getResources().getIdentifier("p"+x, "drawable", getPackageName()));
             IMarkers[i] = Bitmap.createScaledBitmap(imageBitmap,60, 60, false);
         }
+        LocationListener locListener;
         locListener = new LocationListener() {
             @Override
             public void onStatusChanged(String provider, int status,
@@ -184,7 +164,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 locationOrigin = location;
             }
         };
-        //getFriends();
         //set up navigation
         editNavigationBars();
         navigation = new MapboxNavigation(this, "pk.eyJ1IjoicGF0cmljaWFtOTciLCJhIjoiY2pqaWl3aHFqMWMyeDNsbXh4MndnY3hzMiJ9.Fqn_9bmuScR4IqUrUbP6lA");
@@ -294,32 +273,29 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                //check is that coin was collected today at an earlier play from the same user
                if(user.getEmail()!=null) {
                    DocumentReference docRef = db.collection("Users").document(user.getEmail()).collection("Coins").document(id);
-                   docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-                       @Override
-                       public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                           if (task.isSuccessful()) {
-                               DocumentSnapshot document = task.getResult();
-                               if (document.exists()) {
-                                   //if yes don't show it on the map
-                               } else {
-                                   //create the appropriate marker symbol
-                                   icon=null;
-                                   icon = getNumIcon(markersymbol);
-                                   while(icon==null){
-
-                                   }
-                                   icon2=null;
-                                   icon2 = getColourIcon(icon, markercolour);
-                                   while(icon2==null){
-
-                                   }
-                                   Coin coin = new Coin(id, value, currency,lat, lng);
-                                   //add that coin on the map
-                                   addMarker(coin, icon2);
-                               }
+                   docRef.get().addOnCompleteListener(task -> {
+                       if (task.isSuccessful()) {
+                           DocumentSnapshot document = task.getResult();
+                           if (document.exists()) {
+                               //if yes don't show it on the map
                            } else {
-                               Log.d("Doc", "get failed with ", task.getException());
+                               //create the appropriate marker symbol
+                               icon=null;
+                               icon = getNumIcon(markersymbol);
+                               while(icon==null){
+                                   //wait until icon is generated
+                               }
+                               icon2=null;
+                               icon2 = getColourIcon(icon, markercolour);
+                               while(icon2==null){
+                                    //wait until icon is transformed
+                               }
+                               Coin coin = new Coin(id, value, currency,lat, lng);
+                               //add that coin on the map
+                               addMarker(coin, icon2);
                            }
+                       } else {
+                           Timber.d(task.getException(), "get failed with ");
                        }
                    });
                }
@@ -327,7 +303,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             break;
         }
         //once all markers have been placed , switch the progress bar off.
-        pgsBar = (ProgressBar) findViewById(R.id.pBar);
+        pgsBar = findViewById(R.id.pBar);
         pgsBar.setVisibility(View.GONE);
     }
 
@@ -421,7 +397,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onMapReady(MapboxMap mapboxMap) {
         map=mapboxMap;
         if (mapboxMap == null) {
-            Log.d("map", "[onMapReady] mapBox is null");
+            Timber.d("[onMapReady] mapBox is null");
         } else {
             SharedPreferences settings = getSharedPreferences(PREFS_NAME,Context.MODE_PRIVATE);
             String styleValue = settings.getString(PREF_MAP, "");
@@ -474,6 +450,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    /**
+     * This function initializes the location layer used for the user's location
+     */
     @SuppressWarnings("MissingPermission")
     private void initializeLocationLayer() {
         if (mapView == null) {
@@ -482,88 +461,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (map == null) {
                 Timber.d("map is null");
             } else {
-                locationLayerPlugin = new LocationLayerPlugin(mapView,map, locationEngine);
+                locationLayerPlugin = new LocationLayerPlugin(mapView, map, locationEngine);
                 locationLayerPlugin.setLocationLayerEnabled(true);
                 locationLayerPlugin.setCameraMode(CameraMode.TRACKING);
                 locationLayerPlugin.setRenderMode(RenderMode.NORMAL);
             }
         }
-    }
-    public void getFriends(){
-        db.collection("Users").document(user.getEmail()).collection("Friends").get().addOnCompleteListener(task -> {
-            if (task.isSuccessful()) {
-                for (QueryDocumentSnapshot document : task.getResult()) {
-                    friends.add(document.getId().toString());
-                }
-                showFriends();
-            } else {
-                Timber.d(task.getException(), "get failed with ");
-            }
-        });
-    }
-    public void getFriendsProf(String friend,Double Flat,Double Flon){
-        StorageReference mStorageRef = FirebaseStorage.getInstance().getReference();
-        StorageReference profRef = mStorageRef.child("images").child(friend).child("profile.jpg");
-        final long ONE_MEGABYTE = 1024 * 1024 *5;
-        profRef.getBytes(ONE_MEGABYTE).addOnSuccessListener(bytes -> {
-            Fbmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-            createfriendmarker(friend,Flat,Flon,Fbmp);
-        }).addOnFailureListener(exception ->  createfriendmarker(friend,Flat,Flon,null));
-    }
-    public Bitmap getCroppedBitmap(Bitmap bitmap) {
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(),
-                bitmap.getHeight(), Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(output);
-
-        final int color = 0xff424242;
-        final Paint paint = new Paint();
-        final Rect rect = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
-
-        paint.setAntiAlias(true);
-        canvas.drawARGB(0, 0, 0, 0);
-        paint.setColor(color);
-        // canvas.drawRoundRect(rectF, roundPx, roundPx, paint);
-        canvas.drawCircle(bitmap.getWidth() / 2, bitmap.getHeight() / 2,
-                bitmap.getWidth() / 2, paint);
-        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
-        canvas.drawBitmap(bitmap, rect, rect, paint);
-        //Bitmap _bmp = Bitmap.createScaledBitmap(output, 60, 60, false);
-        //return _bmp;
-        return output;
-    }
-    public void createfriendmarker(String email,Double Flat,Double Flon,Bitmap prof){
-        LatLng floc = new LatLng(Flat, Flon);
-        MarkerOptions m;
-        if(prof!=null) {
-            m = new MarkerOptions()
-                    .position(floc)
-                    .title(email)
-                    .setIcon(iconFactory.fromBitmap(Bitmap.createScaledBitmap(getCroppedBitmap(prof), 120, 135, false)));
-            map.addMarker(m);
-       }
-        // else{
-        //            m = new MarkerOptions()
-        //                    .title(email)
-        //                    .position(floc);
-        //        }
-    }
-    public void showFriends(){
-        for(String f:friends){
-            db.collection("Users").document(f).collection("LastLoc").document(f).get().addOnCompleteListener(task -> {
-                if (task.isSuccessful()) {
-                    DocumentSnapshot document = task.getResult();
-                    Flat=document.getDouble("Lat");
-                    Flon=document.getDouble("Lon");
-                    if(Flat!=null && Flon!=null) {
-                        getFriendsProf(f,Flat,Flon);
-                    }
-                } else {
-                    Timber.d(task.getException(), "get failed with ");
-                }
-            });
-
-
-     }
     }
     /**
      * This function requests location updates
@@ -656,6 +559,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private void checkifclosetocoin(){
         Double minimumDist=getClosestCoin(null);
         //if the user is in the range away from a coin a pop up will allow him/her to collect it
@@ -679,8 +583,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                         //add coin in wallet
                         wait=false;
                         addCoin();
-                    }).setNegativeButton("Cancel", (dialog, whichButton) -> { wait=false;
-            }).show();
+                    }).setNegativeButton("Cancel", (dialog, whichButton) -> wait=false).show();
         }
     }
     /**
@@ -721,7 +624,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     //to check which one has the minimum distance
                     Double dist = 0.0;
                     if (curr != null) {
-                        if (markers.get(x).getCurrency().toString().equals(curr)) {
+                        if (markers.get(x).getCurrency().equals(curr)) {
                             LatLng coin = markers.get(x).getLatLng();
                             Location.distanceBetween(userLocation.getLatitude(), userLocation.getLongitude(),
                                     coin.getLatitude(), coin.getLongitude(), result);
@@ -758,7 +661,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     
     @SuppressLint("SetTextI18n")
     public void getSpinner(View view){
-        String returnval = "";
         LayoutInflater inflater = MainActivity.this.getLayoutInflater();
         View view3 = inflater.inflate(R.layout.choosecoinpopup, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -766,29 +668,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button b= view3.findViewById(R.id.button);
         dropdown.setSelection(4);
         builder.setView(view3).show();
-        b.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                loc= dropdown.getSelectedItemPosition();
-                switch (loc) {
-                    //options for the first spinner
-                    case 0:
-                        navigateToClosestCoin("DOLR");
-                        break;
-                    case 1:
-                        navigateToClosestCoin("QUID");
-                        break;
-                    case 2:
-                        navigateToClosestCoin("PENY");
-                        break;
-                    case 3:
-                        navigateToClosestCoin("SHIL");
-                        break;
-                    case 4:
-                        navigateToClosestCoin(null);
-                        break;
-                }
-
+        b.setOnClickListener(v -> {
+            loc= dropdown.getSelectedItemPosition();
+            switch (loc) {
+                //options for the spinner
+                case 0:
+                    navigateToClosestCoin("DOLR");
+                    break;
+                case 1:
+                    navigateToClosestCoin("QUID");
+                    break;
+                case 2:
+                    navigateToClosestCoin("PENY");
+                    break;
+                case 3:
+                    navigateToClosestCoin("SHIL");
+                    break;
+                case 4:
+                    navigateToClosestCoin(null);
+                    break;
             }
+
         });
     }
 
@@ -796,9 +696,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * This function starts a navigation to the coin closest to the user.
      * @param choice choice
      */
+    @SuppressLint("SetTextI18n")
     private void navigateToClosestCoin(String choice){
-        Double mindist= getClosestCoin(choice);
-        Double dist= getClosestCoin(choice);
         while(closestcoin==null) {
             /* if closest coin has not been retrieved yet */
         }
@@ -819,11 +718,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Timber.i("Starts");
                     Point destination = Point.fromLngLat(closestcoin.getLatLng().getLongitude(), closestcoin.getLatLng().getLatitude());
                     getRoute(destination);
-                }).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Do nothing.
-            }
-        }).show();
+                }).setNegativeButton("Cancel", (dialog, whichButton) -> {
+                    // Do nothing.
+                }).show();
     }
 
     /**
@@ -918,6 +815,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Intent i = new Intent(MainActivity.this, BankActivity.class);
         startActivity(i);
     }
+
+    /**
+     * This function is called when the user clicks on the Settings tab.
+     */
     private void Settings() {
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         LayoutInflater inflater = MainActivity.this.getLayoutInflater();
@@ -939,47 +840,43 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Button save= view2.findViewById(R.id.save);
         AlertDialog alert = builder.setView(view2).show();
         Button signout= view2.findViewById(R.id.signout);
-        signout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v){
-                FirebaseAuth.getInstance().signOut();
-                Intent i = new Intent(MainActivity.this, LoginScreen.class);
-                startActivity(i);
-            }});
-        save.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v){
-                Boolean day = dayview.isChecked();
-                Boolean night = nightview.isChecked();
-                Boolean step = stepcounter.isChecked();
-                SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                SharedPreferences.Editor editor = settings.edit();
-                if(day && night){
-                    Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
-                }else if(night){
-                    map.setStyle("mapbox://styles/mapbox/dark-v9");
-                    editor.putString(PREF_MAP,"Dark");
-                    editor.apply();
-                }else if(day){
-                    map.setStyle("mapbox://styles/mapbox/streets-v9");
-                    editor.putString(PREF_MAP,"Light");
-                    editor.apply();
-                }else if(!day&&!night){
-                    Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
-                }
-                if(step){
-                    tvSteps.setVisibility(View.VISIBLE);
-                    stepenable=true;
-                    editor.putString(PREF_STEP,"Enable");
-                    editor.apply();
-                }else{
-                    tvSteps.setVisibility(View.INVISIBLE);
-                    stepenable=false;
-                    editor.putString(PREF_STEP,"Disable");
-                    editor.apply();
-                }
-                alert.dismiss();
-            }});
+        signout.setOnClickListener(v -> {
+            FirebaseAuth.getInstance().signOut();
+            Intent i = new Intent(MainActivity.this, LoginScreen.class);
+            startActivity(i);
+        });
+        save.setOnClickListener(v -> {
+            Boolean day = dayview.isChecked();
+            Boolean night = nightview.isChecked();
+            Boolean step = stepcounter.isChecked();
+            SharedPreferences settings = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = settings.edit();
+            if(day && night){
+                Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
+            }else if(night){
+                map.setStyle("mapbox://styles/mapbox/dark-v9");
+                editor.putString(PREF_MAP,"Dark");
+                editor.apply();
+            }else if(day){
+                map.setStyle("mapbox://styles/mapbox/streets-v9");
+                editor.putString(PREF_MAP,"Light");
+                editor.apply();
+            }else if(!day&&!night){
+                Toast.makeText(view2.getContext(),"You need to select one map style.",Toast.LENGTH_SHORT).show();
+            }
+            if(step){
+                tvSteps.setVisibility(View.VISIBLE);
+                stepenable=true;
+                editor.putString(PREF_STEP,"Enable");
+                editor.apply();
+            }else{
+                tvSteps.setVisibility(View.INVISIBLE);
+                stepenable=false;
+                editor.putString(PREF_STEP,"Disable");
+                editor.apply();
+            }
+            alert.dismiss();
+        });
 
 
     }
@@ -1020,7 +917,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             locationEngine.deactivate();
         }
         mapView.onDestroy();
-        FirebaseAuth.getInstance().signOut();
         navigation.stopNavigation();
         navigation.onDestroy();
     }
@@ -1045,9 +941,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     step.put("Goal",50);
                     db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL")
                             .set(step)
-                            .addOnSuccessListener(aVoid -> {
-                                Timber.d("DocumentSnapshot successfully updated.");
-                            })
+                            .addOnSuccessListener(aVoid -> Timber.d("DocumentSnapshot successfully updated."))
                             .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
                     goal=50;
                 }
@@ -1062,9 +956,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             step.put("Goal",goal*2);
             db.collection("Users").document(user.getEmail()).collection("Steps").document("GOAL")
                     .set(step)
-                    .addOnSuccessListener(aVoid -> {
-                        Timber.d("DocumentSnapshot successfully updated.");
-                    })
+                    .addOnSuccessListener(aVoid -> Timber.d("DocumentSnapshot successfully updated."))
                     .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
             goal=goal*2;
             Toast.makeText(MainActivity.this, "GOAL REACHED! New goal: " + goal, Toast.LENGTH_SHORT).show();
@@ -1075,8 +967,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     /**
      * This function retrives the amount of steps from an earlier play.
      */
+    @SuppressLint("SetTextI18n")
     private void getStepsfromEarlier(){
-        DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
+        @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
         Date date = new Date();
         String date1=dateFormat.format(date);
         //get sum of today's step if its not the first time played today
@@ -1099,16 +992,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * This function updates the steps that the user took in Firebase.
      */
     private void updateSteps() {
-            DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
+            @SuppressLint("SimpleDateFormat") DateFormat dateFormat = new SimpleDateFormat("ddMMyyyy");
             Date date = new Date();
             String date1 = dateFormat.format(date);
             Map<String, Object> step = new HashMap<>();
             step.put("Steps", totaldailysteps);
             db.collection("Users").document(user.getEmail()).collection("Steps").document(date1)
                     .set(step)
-                    .addOnSuccessListener(aVoid -> {
-                        Timber.d("DocumentSnapshot successfully updated.");
-                    })
+                    .addOnSuccessListener(aVoid -> Timber.d("DocumentSnapshot successfully updated."))
                     .addOnFailureListener(e -> Timber.tag("User").w(e, "Error updating document"));
     }
 
@@ -1146,6 +1037,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             updateSteps();
         }
     }
+    @SuppressLint("SetTextI18n")
     public void showGoal(View view){
         AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
         // Get the layout inflater
