@@ -32,6 +32,7 @@ import static android.support.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static android.support.test.espresso.matcher.ViewMatchers.withClassName;
 import static android.support.test.espresso.matcher.ViewMatchers.withId;
 import static android.support.test.espresso.matcher.ViewMatchers.withText;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.greaterThan;
@@ -229,7 +230,7 @@ public class depositTest {
             }
         }
         double gold2= Double.parseDouble(text.split(":")[1]);
-        assertThat(gold2,greaterThan(gold1));
+        assertTrue("Deposit succeed", gold2>gold1);
     }
 
     private static Matcher<View> childAtPosition(

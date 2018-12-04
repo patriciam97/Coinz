@@ -698,6 +698,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     @SuppressLint("SetTextI18n")
     private void navigateToClosestCoin(String choice){
+        getClosestCoin(choice);
         while(closestcoin==null) {
             /* if closest coin has not been retrieved yet */
         }
